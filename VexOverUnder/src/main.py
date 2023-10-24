@@ -32,17 +32,17 @@ controller = Controller()
 GREEN_MOTOR = GearSetting.RATIO_18_1
 BLUE_MOTOR = GearSetting.RATIO_6_1
 # Left Motors
-left_motor_1 = Motor(Ports.PORT2, BLUE_MOTOR, False)
-left_motor_2 = Motor(Ports.PORT4, BLUE_MOTOR, False)
-left_motor_3 = Motor(Ports.PORT6, BLUE_MOTOR, False)
-left_motor_4 = Motor(Ports.PORT8, BLUE_MOTOR, False)
+left_motor_1 = Motor(Ports.PORT2, BLUE_MOTOR, True)
+left_motor_2 = Motor(Ports.PORT4, BLUE_MOTOR, True)
+left_motor_3 = Motor(Ports.PORT6, BLUE_MOTOR, True)
+left_motor_4 = Motor(Ports.PORT8, BLUE_MOTOR, True)
 left_motor_group = MotorGroup(left_motor_1,left_motor_2,left_motor_3,left_motor_4)
 
 #Right Motors
-right_motor_1 = Motor(Ports.PORT3, BLUE_MOTOR, True)
-right_motor_2 = Motor(Ports.PORT5, BLUE_MOTOR, True)
-right_motor_3 = Motor(Ports.PORT7, BLUE_MOTOR, True)
-right_motor_4 = Motor(Ports.PORT9, BLUE_MOTOR, True)
+right_motor_1 = Motor(Ports.PORT3, BLUE_MOTOR, False)
+right_motor_2 = Motor(Ports.PORT5, BLUE_MOTOR, False)
+right_motor_3 = Motor(Ports.PORT7, BLUE_MOTOR, False)
+right_motor_4 = Motor(Ports.PORT9, BLUE_MOTOR, False)
 right_motor_group = MotorGroup(right_motor_1,right_motor_2,right_motor_3,right_motor_4)
 
 def pre_autonomous():
