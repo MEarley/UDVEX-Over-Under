@@ -12,6 +12,7 @@
 
 # Library imports
 from vex import *
+import math
 
 # Definitions 
 # The Brain
@@ -64,27 +65,52 @@ def user_control():
         #brain.screen.print("User-control")
         L1 = controller.buttonL1.pressing()
 
+        # Testing
         if(L1 == 1):
             brain.screen.clear_screen(Color.BLUE) 
-            brain.screen.print_at("Controller Position: %d" %(controller.axis3.position()),x=100,y=40)
+            brain.screen.print_at("Controller Position: %d" %(int)(50.0 * (math.log(abs(controller.axis3.position())+1,10))),x=100,y=40)
         else:
             brain.screen.clear_screen()
-            brain.screen.print_at("Controller Position: %d" %(controller.axis3.position()),x=100,y=40)
+            brain.screen.print_at("Controller Position: %d" %(int)(50.0 * (math.log(abs(controller.axis3.position())+1,10))),x=100,y=40)
 
-        left_speed = controller.axis3.position()
-        if(left_speed > 5 or left_speed < -5):
+        #left_speed = controller.axis3.position()
+
+        # Controlelr joystick positions
+        leftAxis_UpDwn = controller.axis3.position()
+        rightAxis_UpDwn = controller.axis2.position()
+
+        # Determines whether or not the robot should be going forward to backward
+        isNegative_Left = False if leftAxis_UpDwn >= 0 else True
+        isNegative_Right = False if rightAxis_UpDwn >= 0 else True
+
+        # Calculate left velocity percentage based on logarithmic scale (0 < leftAxis_UpDwn <= 100)
+        left_speed = (int)(50.0 * (math.log(abs(leftAxis_UpDwn)+1,10)))
+
+        if(left_speed > 20):
+            # Set the velocity depending on the axis position
             left_motor_group.set_velocity(left_speed,PERCENT)
-            left_motor_group.spin(FORWARD)
+            if(not isNegative_Left):
+                left_motor_group.spin(FORWARD)
+            else:
+                left_motor_group.spin(REVERSE)
+            #left_motor_group.set_velocity(left_speed,units=VoltageUnits)
         else:
             left_motor_group.stop()
 
-        right_speed = controller.axis2.position()
-        if(right_speed > 5 or right_speed < -5):
+        #right_speed = controller.axis2.position()
+
+        # Calculate left velocity percentage based on logarithmic scale (0 < rightAxis_UpDwn <= 100)
+        right_speed = (int)(50.0 * (math.log(abs(rightAxis_UpDwn)+1,10)))
+
+        if(right_speed > 20):
+            # Set the velocity depending on the axis position
             right_motor_group.set_velocity(right_speed,PERCENT)
-            right_motor_group.spin(FORWARD)
+            if(not isNegative_Right):
+                right_motor_group.spin(FORWARD)
+            else:
+                right_motor_group.spin(REVERSE)
         else:
             right_motor_group.stop()
-
 
         wait(20, MSEC)
 
