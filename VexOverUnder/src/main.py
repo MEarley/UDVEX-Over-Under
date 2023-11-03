@@ -2,9 +2,9 @@
 #                                                                               #              
 #    Project:        Robotics Team 2 Robot 1                                    #
 #    Module:         main.py                                                    #
-#    Author:         VEX                                                        #
+#    Author:         UD Team 2                                                  #
 #    Created:        9/29/2023                                                  #
-#    Description:                                                               #
+#    Description:    UnderOver Robot 1 of the VEXU UD Team.                     #
 #                                                                               #                                                                          
 #                                                                               #
 #                                                                               #                                                                          
@@ -57,9 +57,12 @@ right_motor_3 = Motor(Ports.PORT7, BLUE_MOTOR, False)
 right_motor_4 = Motor(Ports.PORT9, BLUE_MOTOR, False)
 right_motor_group = MotorGroup(right_motor_1,right_motor_2,right_motor_3,right_motor_4)
 
+# Catapult Motor
+catapult_motor = Motor(Ports.PORT19,BLUE_MOTOR,False)
+
 def pre_autonomous():
     brain.screen.clear_screen()
-    brain.screen.print("Pre-auton code")
+    brain.screen.print("Pre-auton Mode")
     wait(1, SECONDS)
 
 # Forward is 0 degrees 
@@ -95,8 +98,8 @@ def goTo(x, y):
     
 
 def autonomous():
-    brain.screen.clear_screen()
-    brain.screen.print("Auton code")
+    brain.screen.clear_screen(Color.CYAN)
+    brain.screen.print("Autonomous Mode")
 
     goTo(-1,-1)
     wait(0.5, SECONDS)
@@ -151,20 +154,21 @@ def user_control():
         # Switch between control modes
         if(controller.buttonUp.pressing()):
             Control_Mode = not Control_Mode
+            wait(0.5,SECONDS)
 
         # Control Modes: 1 = Manual Tank Drive, 2 = Joystick control
         if(Control_Mode):
-            #brain.screen.clear_screen()
-            #brain.screen.print("User-control")
+            brain.screen.clear_screen(Color.GREEN)
+            brain.screen.print("Tank-Drive Control")
             L1 = controller.buttonL1.pressing()
 
             # Testing
-            if(L1 == 1):
-                brain.screen.clear_screen(Color.BLUE) 
-                brain.screen.print_at("Controller Position: %d" %(int)(50.0 * (math.log(abs(controller.axis3.position())+1,10))),x=100,y=40)
-            else:
-                brain.screen.clear_screen()
-                brain.screen.print_at("Controller Position: %d" %(int)(50.0 * (math.log(abs(controller.axis3.position())+1,10))),x=100,y=40)
+            #if(L1 == 1):
+              #  brain.screen.clear_screen(Color.BLUE) 
+             #   brain.screen.print_at("Controller Position: %d" %(int)(50.0 * (math.log(abs(controller.axis3.position())+1,10))),x=100,y=40)
+            #else:
+                #brain.screen.clear_screen()
+                #brain.screen.print_at("Controller Position: %d" %(int)(50.0 * (math.log(abs(controller.axis3.position())+1,10))),x=100,y=40)
 
             #left_speed = controller.axis3.position()
 
@@ -190,7 +194,7 @@ def user_control():
                 # Set the velocity depending on the axis position
                 left_motor_group.set_velocity(left_speed,PERCENT)
             else:
-                left_motor_group.stop()
+                left_motor_group.stop(BRAKE)
 
             #right_speed = controller.axis2.position()
 
@@ -207,8 +211,11 @@ def user_control():
                 # Set the velocity depending on the axis position
                 right_motor_group.set_velocity(right_speed,PERCENT)
             else:
-                right_motor_group.stop()
+                right_motor_group.stop(BRAKE)
         else:
+            brain.screen.clear_screen(Color.BLUE)
+            brain.screen.print("Arcade-Drive Control")
+
             # Controls for Up-Down and Left-Right movement
             leftAxis_UpDwn = controller.axis3.position()
             leftAxis_LR = controller.axis4.position()
@@ -234,8 +241,8 @@ def user_control():
                 left_motor_group.set_velocity(ySpeed + xSpeed,PERCENT)
                 right_motor_group.set_velocity(ySpeed - xSpeed,PERCENT)
             else:
-                left_motor_group.stop()
-                right_motor_group.stop()
+                left_motor_group.stop(BRAKE)
+                right_motor_group.stop(BRAKE)
 
 
         wait(20, MSEC)
