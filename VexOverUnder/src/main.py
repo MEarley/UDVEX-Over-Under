@@ -25,6 +25,9 @@ brain = Brain()
 # The Controller
 controller = Controller()
 
+global RotationPosition
+RotationPosition = 0
+
 # Axial1 Positioning
 #               0
 #               |
@@ -58,33 +61,70 @@ right_motor_4 = Motor(Ports.PORT9, BLUE_MOTOR, False)
 right_motor_group = MotorGroup(right_motor_1,right_motor_2,right_motor_3,right_motor_4)
 
 # Catapult Motor
-catapult_motor = Motor(Ports.PORT19,BLUE_MOTOR,False)
+catapult_motor = Motor(Ports.PORT1,BLUE_MOTOR,False)
+catapult_motor.set_max_torque(100,PERCENT)
 
 def pre_autonomous():
     brain.screen.clear_screen()
     brain.screen.print("Pre-auton Mode")
     wait(1, SECONDS)
 
+def rotateTo(degrees):
+
+    global RotationPosition
+    isRotateRight = 1
+
+    # flagging for left or right rotation
+    if(RotationPosition < degrees):
+        isRotateRight = -1
+    
+    if(degrees == 0):
+        if(RotationPosition > 180):
+            isRotateRight = -1
+        else:
+            isRotateRight = 1
+        rotateBy = 360 - RotationPosition * isRotateRight   
+    else:
+        rotateBy = abs(degrees - RotationPosition)
+
+    left_motor_group.spin_for(direction=FORWARD,rotation=rotateBy * isRotateRight * ROTATIONALOFFSET,units=RotationUnits.DEG,velocity=25,units_v=VelocityUnits.PERCENT,wait=False)
+    right_motor_group.spin_for(direction=FORWARD,rotation=rotateBy * isRotateRight * -1 * ROTATIONALOFFSET,units=RotationUnits.DEG,velocity=25,units_v=VelocityUnits.PERCENT,wait=True)
+
+    RotationPosition += rotateBy  * isRotateRight * -1 
+    if(RotationPosition > 360):
+        RotationPosition -= 360
+
+    print(RotationPosition)
+    print(" New RotationPosition")
+
 # Forward is 0 degrees 
 def goTo(x, y):
     if(x == 0 and y == 0):
         return
     if(x == 0):
+
         degrees = 0
         if(y < 0):
-            degrees = 180 * ROTATIONALOFFSET
+            degrees = 180
     elif(y == 0):
-        degrees = 90 * ROTATIONALOFFSET
+        degrees = 90
     else:
-        degrees = (180.0 /  math.pi) * (math.atan(y/x)) * ROTATIONALOFFSET
+        degrees = (180.0 /  math.pi) * (math.atan(y/x))
     
+    global RotationPosition
+    RotationPosition += degrees
+    degrees *= ROTATIONALOFFSET
+    if(RotationPosition > 360):
+        RotationPosition -= 360
+
     # If x is negative, robot will rotate towards the left
     if(x < 0 and y < 0):
         degrees -= 180 * ROTATIONALOFFSET
     elif(x < 0):
         degrees *= -1
     
-    print(degrees)
+    
+    print(RotationPosition)
 
     # Rotate into the right direction
     left_motor_group.spin_for(direction=FORWARD,rotation=degrees,units=RotationUnits.DEG,velocity=25,units_v=VelocityUnits.PERCENT,wait=False)
@@ -101,12 +141,58 @@ def autonomous():
     brain.screen.clear_screen(Color.CYAN)
     brain.screen.print("Autonomous Mode")
 
+
+    goTo(0,1)
+    rotateTo(90)
+    goTo(0,1)
+    rotateTo(180)
+    goTo(0,1)
+    rotateTo(270)
+    goTo(0,1)
+    rotateTo(0)
+    goTo(0,1)
+   
+
+    return
+    rotateTo(90)
+    rotateTo(0)
+    rotateTo(180)
+    rotateTo(90)
+    rotateTo(0)
+    rotateTo(180)
+    
+    rotateTo(270)
+    rotateTo(225)
+
+    rotateTo(45)
+    rotateTo(135)
+    rotateTo(0)
+    return
+    #Diamond 
+    goTo(1,1)
+    goTo(1,0)
+    goTo(1,0)
+    goTo(1,0)
+
+    #Square
+    goTo(0,1)
+    goTo(1,0)
+    goTo(1,0)
+    goTo(1,0)
+
+    goTo(-1,2)
+    goTo(0,-1)
+    goTo(0,1)
+
+    rotateTo(90)
+    return
+
     goTo(-1,-1)
     wait(0.5, SECONDS)
     goTo(0,-1)
     wait(0.5,SECONDS)
     
-
+    
     #Square Test
     goTo(0,1)
     wait(0.5, SECONDS)
