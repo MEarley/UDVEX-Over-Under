@@ -64,6 +64,10 @@ right_motor_group = MotorGroup(right_motor_1,right_motor_2,right_motor_3,right_m
 catapult_motor = Motor(Ports.PORT1,BLUE_MOTOR,False)
 catapult_motor.set_max_torque(100,PERCENT)
 
+# Intake motor
+intake_motor = Motor(Ports.PORT10, GREEN_MOTOR, False)
+intake_motor.set_velocity(100,PERCENT)
+
 def pre_autonomous():
     brain.screen.clear_screen()
     brain.screen.print("Pre-auton Mode")
@@ -132,6 +136,7 @@ def goTo(x, y):
 
     # Move Forward
     for i in range(int(round(math.sqrt(x**2 + y**2)))):
+        #left_motor_group.__spin_for_distance()
         left_motor_group.spin_for(direction=FORWARD,rotation=1080,units=RotationUnits.DEG,velocity=50,units_v=VelocityUnits.PERCENT,wait=False)
         right_motor_group.spin_for(direction=FORWARD,rotation=1080,units=RotationUnits.DEG,velocity=50,units_v=VelocityUnits.PERCENT,wait=True)
 
@@ -236,6 +241,7 @@ def autonomous():
 
 def user_control():
     Control_Mode = True 
+    
     while(True):
         # Switch between control modes
         if(controller.buttonUp.pressing()):
@@ -246,16 +252,19 @@ def user_control():
         if(Control_Mode):
             brain.screen.clear_screen(Color.GREEN)
             brain.screen.print("Tank-Drive Control")
-            L1 = controller.buttonL1.pressing()
+            R1 = bool(controller.buttonR1.pressing())
+            R2 = bool(controller.buttonR2.pressing())
 
-            # Testing
-            #if(L1 == 1):
-              #  brain.screen.clear_screen(Color.BLUE) 
-             #   brain.screen.print_at("Controller Position: %d" %(int)(50.0 * (math.log(abs(controller.axis3.position())+1,10))),x=100,y=40)
-            #else:
-                #brain.screen.clear_screen()
-                #brain.screen.print_at("Controller Position: %d" %(int)(50.0 * (math.log(abs(controller.axis3.position())+1,10))),x=100,y=40)
 
+            # Intake control
+            if(R1 == True and R2 == False):
+                print("Forward")
+                intake_motor.spin(REVERSE)
+            elif ((R2 == True) and (R1 == False)):
+                print("Reverse")
+                intake_motor.spin(FORWARD)
+            else:
+                intake_motor.stop()
             #left_speed = controller.axis3.position()
 
             # Controlelr joystick positions
@@ -280,7 +289,7 @@ def user_control():
                 # Set the velocity depending on the axis position
                 left_motor_group.set_velocity(left_speed,PERCENT)
             else:
-                left_motor_group.stop(BRAKE)
+                left_motor_group.stop(COAST)
 
             #right_speed = controller.axis2.position()
 
@@ -297,7 +306,7 @@ def user_control():
                 # Set the velocity depending on the axis position
                 right_motor_group.set_velocity(right_speed,PERCENT)
             else:
-                right_motor_group.stop(BRAKE)
+                right_motor_group.stop(COAST)
         else:
             brain.screen.clear_screen(Color.BLUE)
             brain.screen.print("Arcade-Drive Control")
@@ -327,8 +336,8 @@ def user_control():
                 left_motor_group.set_velocity(ySpeed + xSpeed,PERCENT)
                 right_motor_group.set_velocity(ySpeed - xSpeed,PERCENT)
             else:
-                left_motor_group.stop(BRAKE)
-                right_motor_group.stop(BRAKE)
+                left_motor_group.stop(COAST)
+                right_motor_group.stop(COAST)
 
 
         wait(20, MSEC)
