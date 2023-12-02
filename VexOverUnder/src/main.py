@@ -17,6 +17,7 @@ import math
 # Constants
 EXPONENTIALCONSTANT = 21.71472409516259138255644594583
 ROTATIONALOFFSET = 7.5
+KP = 0.01
 
 # Definitions 
 # The Brain
@@ -65,13 +66,14 @@ catapult_motor = Motor(Ports.PORT1,BLUE_MOTOR,False)
 catapult_motor.set_max_torque(100,PERCENT)
 
 # Intake motor
-intake_motor = Motor(Ports.PORT10, GREEN_MOTOR, False)
+intake_motor = Motor(Ports.PORT10, GREEN_MOTOR, True)
 intake_motor.set_velocity(100,PERCENT)
 
-def pre_autonomous():
-    brain.screen.clear_screen()
-    brain.screen.print("Pre-auton Mode")
-    wait(1, SECONDS)
+def PIDControl(target, position):
+    # Proportional Control
+    error = target - position
+    return error * KP
+
 
 def rotateTo(degrees):
 
@@ -103,8 +105,12 @@ def rotateTo(degrees):
 
 # Forward is 0 degrees 
 def goTo(x, y):
+
+    # No movement
     if(x == 0 and y == 0):
         return
+    
+    
     if(x == 0):
 
         degrees = 0
@@ -140,13 +146,43 @@ def goTo(x, y):
         left_motor_group.spin_for(direction=FORWARD,rotation=1080,units=RotationUnits.DEG,velocity=50,units_v=VelocityUnits.PERCENT,wait=False)
         right_motor_group.spin_for(direction=FORWARD,rotation=1080,units=RotationUnits.DEG,velocity=50,units_v=VelocityUnits.PERCENT,wait=True)
 
+def left_spin_volt(direction, voltage):
+    left_motor_1.spin(direction,voltage,VOLT)
+    left_motor_2.spin(direction,voltage,VOLT)
+    left_motor_3.spin(direction,voltage,VOLT)
+    left_motor_4.spin(direction,voltage,VOLT)
+    return
+
+def right_spin_volt(direction,voltage):
+    right_motor_1.spin(direction,voltage,VOLT)
+    right_motor_2.spin(direction,voltage,VOLT)
+    right_motor_3.spin(direction,voltage,VOLT)
+    right_motor_4.spin(direction,voltage,VOLT)
+    return
+
+def pre_autonomous():
+    brain.screen.clear_screen()
+    brain.screen.print("Pre-auton Mode")
+    wait(1, SECONDS)    
     
 
 def autonomous():
     brain.screen.clear_screen(Color.CYAN)
     brain.screen.print("Autonomous Mode")
+    t = 360 * 10
+    pos = 0
 
+    while(pos != t):
+        pos = ((left_motor_group.position() + right_motor_group.position()) / 2)
+        drive = PIDControl(t,pos)
+        print(pos)
+        print(drive)
+        left_spin_volt(FORWARD,drive)
+        right_spin_volt(FORWARD,drive)
+        
 
+    return
+    # Go To Test
     goTo(0,1)
     rotateTo(90)
     goTo(0,1)
