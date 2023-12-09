@@ -15,6 +15,9 @@ from vex import *
 import math
 
 # Constants
+WHEELSIZE = 2.75    # Inches Diameter
+TILEDISTANCE = (2 * 12) # 2 feet
+TILEREVOLUTIONS = TILEDISTANCE / (math.pi * WHEELSIZE)  # Revolutions per Tile (S / (PI)*Diameter = Revolutions )
 EXPONENTIALCONSTANT = 21.71472409516259138255644594583
 ROTATIONALOFFSET = 7.5
 KP = 0.01
@@ -169,14 +172,18 @@ def pre_autonomous():
 def autonomous():
     brain.screen.clear_screen(Color.CYAN)
     brain.screen.print("Autonomous Mode")
-    t = 360 * 10
+    t = TILEREVOLUTIONS * 360       # Convert revs to degrees
     pos = 0
 
-    while(pos != t):
-        pos = ((left_motor_group.position() + right_motor_group.position()) / 2)
-        drive = PIDControl(t,pos)
+    while(not(pos < t + 1 and pos > t - 1)):
+        pos = ((left_motor_group.position() + right_motor_group.position()) / 2)    # Average motor position
+        drive = PIDControl(t,pos)   #drive based on error between postion and target position
+        print("Rotational Position: ",end="")
         print(pos)
+        print("Set Drive: ",end="")
         print(drive)
+        print("Target Position: ",end="")
+        print(t)
         left_spin_volt(FORWARD,drive)
         right_spin_volt(FORWARD,drive)
         
@@ -277,7 +284,8 @@ def autonomous():
 
 def user_control():
     Control_Mode = True 
-    
+    print(TILEREVOLUTIONS)
+    print(TILEDISTANCE)
     while(True):
         # Switch between control modes
         if(controller.buttonUp.pressing()):
