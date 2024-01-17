@@ -27,7 +27,6 @@ class mode(Enum):
     TANK = 1
     ARCADE = 2
     ARCADE_SPEED = 3
-    WINTER = 4
 
 
 # Definitions 
