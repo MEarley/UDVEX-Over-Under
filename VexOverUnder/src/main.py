@@ -444,13 +444,21 @@ def user_control():
             catapult_motor.stop()
 
         # Control Modes: 1 = Manual Tank Drive, 2 = Joystick control, 3 = Joystick control at max speed
-        match Control_Mode :
-            case mode.TANK :
-                tank_drive()
-            case mode.ARCADE :
-                arcade_drive()
-            case mode.ARCADE_SPEED:
-                arcade_speed_drive()
+        if(Control_Mode == mode.TANK):
+            tank_drink()
+        elif(Control_Mode == mode.ARCADE):
+            arcade_drive()
+        elif(Control_Mode == mode.ARCADE_SPEED):
+            arcade_speed_drive()
+            
+        
+        #match Control_Mode :
+            #case mode.TANK :
+                #tank_drive()
+            #case mode.ARCADE :
+                #arcade_drive()
+            #case mode.ARCADE_SPEED:
+                #arcade_speed_drive()
 
         wait(20, MSEC)
 
