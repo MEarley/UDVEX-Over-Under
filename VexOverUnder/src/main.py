@@ -13,7 +13,6 @@
 # Library imports
 from vex import *
 import math
-from enum import Enum
 
 # Constants
 WHEELSIZE = 2.75    # Inches Diameter
@@ -23,7 +22,7 @@ EXPONENTIALCONSTANT = 21.71472409516259138255644594583
 ROTATIONALOFFSET = 7.5
 KP = 0.01
 
-class mode(Enum):
+class mode():
     TANK = 1
     ARCADE = 2
     ARCADE_SPEED = 3
@@ -421,7 +420,7 @@ def user_control():
             Control_Mode = mode.ARCADE_SPEED
         elif(controller.buttonLeft.pressing()): # D-pad Left
             Control_Mode = mode.TANK # Extra mode slot
-        wait(0.5,SECONDS)
+        
 
         R1 = bool(controller.buttonR1.pressing())
         R2 = bool(controller.buttonR2.pressing())
