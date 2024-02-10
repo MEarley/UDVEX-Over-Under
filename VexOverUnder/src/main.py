@@ -35,6 +35,9 @@ brain = Brain()
 # The Controller
 controller = Controller()
 
+# Limit Switch
+switch = Limit(brain.three_wire_port.a)
+
 global RotationPosition
 RotationPosition = 0
 
@@ -56,6 +59,7 @@ RotationPosition = 0
 # Green Motor Cap 18:1 (200 rpm) | Blue Motor Cap 6:1 (600 rpm)
 GREEN_MOTOR = GearSetting.RATIO_18_1
 BLUE_MOTOR = GearSetting.RATIO_6_1
+RED_MOTOR = GearSetting.RATIO_36_1
 # Left Motors
 left_motor_1 = Motor(Ports.PORT2, BLUE_MOTOR, True)
 left_motor_2 = Motor(Ports.PORT4, BLUE_MOTOR, True)
@@ -71,14 +75,14 @@ right_motor_3 = Motor(Ports.PORT7, BLUE_MOTOR, False)
 right_motor_group = MotorGroup(right_motor_1,right_motor_2,right_motor_3)
 
 # Catapult Motor
-catapult_motor_FW = Motor(Ports.PORT8,BLUE_MOTOR,False)
-catapult_motor_BW = Motor(Ports.PORT9,BLUE_MOTOR,True)
+catapult_motor_FW = Motor(Ports.PORT8,RED_MOTOR,False)
+catapult_motor_BW = Motor(Ports.PORT9,RED_MOTOR,True)
 catapult_motor_FW.set_max_torque(100,PERCENT)
 catapult_motor_BW.set_max_torque(100,PERCENT)
 catapult_motor = MotorGroup(catapult_motor_FW,catapult_motor_BW)
 
 # Intake motor
-intake_motor = Motor(Ports.PORT10, GREEN_MOTOR, True)
+intake_motor = Motor(Ports.PORT10, BLUE_MOTOR, True)
 intake_motor.set_velocity(100,PERCENT)
 
 def PIDControl(target, position):
@@ -408,8 +412,10 @@ def arcade_speed_drive():
 
 def user_control():
     Control_Mode = mode.TANK
+    #launch = True
     print(TILEREVOLUTIONS)
     print(TILEDISTANCE)
+
     while(True):
         # Switch between control modes
         if(controller.buttonUp.pressing()): # D-pad Up
@@ -436,21 +442,41 @@ def user_control():
             intake_motor.stop()
         
 
-        L1 = bool(controller.buttonL1.pressing)
+        L1 = bool(controller.buttonL1.pressing())
+        
+        if(switch.pressing()):
+            print("switch pressed")
+            brain.screen.clear_screen(Color.ORANGE)
+            brain.screen.set_pen_color(Color.WHITE)
+            brain.screen.set_pen_width(30)
+            brain.screen.draw_line(200,100,400,400)
+            brain.screen.draw_line(400,100,200,400)
+            wait(1,SECONDS)
+
+        #if(controller.buttonY.pressing()):
+        #    launch = not launch
+        #    if(launch == True):
+        #        brain.screen.set_pen_color(Color.WHITE)
+        #        brain.screen.draw_line(10,10,50,50)
+        #        brain.screen.draw_line(50,10,10,50)
+        #    wait(1, MSEC)
+        # and launch == True or ((catapult_motor_FW.position() % 360) <= 160)
+
         # Catapult Controls
         if(L1 == True):
+            print(catapult_motor_FW.position() % 360)
             catapult_motor.spin(FORWARD)
         else:
             catapult_motor.stop()
 
         # Control Modes: 1 = Manual Tank Drive, 2 = Joystick control, 3 = Joystick control at max speed
         if(Control_Mode == mode.TANK):
-            tank_drink()
+            tank_drive()
         elif(Control_Mode == mode.ARCADE):
             arcade_drive()
         elif(Control_Mode == mode.ARCADE_SPEED):
             arcade_speed_drive()
-            
+        
         
         #match Control_Mode :
             #case mode.TANK :
