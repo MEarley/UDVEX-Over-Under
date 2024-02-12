@@ -410,9 +410,23 @@ def arcade_speed_drive():
 
     return
 
+def launchCatapult():
+    while(switch.pressing() == True):
+        1 == 1 # loop until switch is released and catapult is fired
+    catapult_motor.stop()
+    return
+    while((switch.pressing() == False)):
+        catapult_motor.spin(FORWARD)
+
+    if(allowLaunch == False):
+        catapult_motor.stop()
+        return
+    
+       
+
 def user_control():
     Control_Mode = mode.TANK
-    #launch = True
+    allowLaunch = False
     print(TILEREVOLUTIONS)
     print(TILEDISTANCE)
 
@@ -443,15 +457,25 @@ def user_control():
         
 
         L1 = bool(controller.buttonL1.pressing())
+        if(switch.pressing() == False):
+            while((switch.pressing() == False)):
+                catapult_motor.spin(FORWARD)
+            catapult_motor.stop()
         
-        if(switch.pressing()):
-            print("switch pressed")
-            brain.screen.clear_screen(Color.ORANGE)
-            brain.screen.set_pen_color(Color.WHITE)
-            brain.screen.set_pen_width(30)
-            brain.screen.draw_line(200,100,400,400)
-            brain.screen.draw_line(400,100,200,400)
-            wait(1,SECONDS)
+        #controller.buttonL1.pressed(launchCatapult)
+        if(L1 == True):
+            while(switch.pressing() == True):
+                catapult_motor.spin(FORWARD) # loop until switch is released and catapult is fired
+            catapult_motor.stop()
+        #controller.buttonY.pressed(launchCatapult,arg=tuple([True]))
+
+
+        #if(controller.buttonY.pressing() == True):
+           # catapult_motor.spin_for(direction=FORWARD,rotation=45,units=RotationUnits.DEG,velocity=50,units_v=VelocityUnits.PERCENT,wait=False)
+            
+
+        
+
 
         #if(controller.buttonY.pressing()):
         #    launch = not launch
@@ -462,12 +486,14 @@ def user_control():
         #    wait(1, MSEC)
         # and launch == True or ((catapult_motor_FW.position() % 360) <= 160)
 
-        # Catapult Controls
-        if(L1 == True):
-            print(catapult_motor_FW.position() % 360)
-            catapult_motor.spin(FORWARD)
-        else:
-            catapult_motor.stop()
+        # Catapult Controls and (allowLaunch or (not switch.pressing()))
+        #if((L1 == True and (switch.pressing() == False)) or controller.buttonY.pressing() == True):
+            #print(catapult_motor_FW.position() % 360)
+            #catapult_motor.spin(FORWARD)
+        #else:
+            #catapult_motor.stop()
+
+        
 
         # Control Modes: 1 = Manual Tank Drive, 2 = Joystick control, 3 = Joystick control at max speed
         if(Control_Mode == mode.TANK):
