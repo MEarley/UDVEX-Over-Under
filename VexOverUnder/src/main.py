@@ -26,6 +26,7 @@ class mode():
     TANK = 1
     ARCADE = 2
     ARCADE_SPEED = 3
+    EXPERIMENTAL = 4
 
 
 # Definitions 
@@ -410,6 +411,50 @@ def arcade_speed_drive():
 
     return
 
+def experimental_drive():
+    brain.screen.clear_screen(Color.ORANGE)
+    brain.screen.print("Experimental Control")
+
+    # Controls for Up-Down and Left-Right movement
+    leftAxis_UpDwn = controller.axis3.position()
+    leftAxis_LR = controller.axis4.position()
+
+    # Motor speed percentage based on axis
+    ySpeed = leftAxis_UpDwn 
+    xSpeed = leftAxis_LR
+
+    if(ySpeed > 5 or xSpeed > 5):
+        left_motor_group.spin(FORWARD)
+        right_motor_group.spin(FORWARD)
+
+        # Determines whether or not the robot should be going forward or backward, left or right
+        isLeftNegative = False if ySpeed + xSpeed >= 0 else True
+        isRightNegative = False if ySpeed - xSpeed >= 0 else True
+
+        leftMotorPercent = 0
+        rightMotorPercent = 0
+
+        # Determines the vector between both axis positions
+        if(isLeftNegative):
+            leftMotorPercent = -1 * math.hypot(ySpeed,xSpeed)
+        else:
+            leftMotorPercent = -1 * math.hypot(ySpeed,xSpeed)
+        
+        if(isRightNegative):
+            rightMotorPercent = -1 * math.hypot(ySpeed,-1 * xSpeed)
+        else:
+            rightMotorPercent = math.hypot(ySpeed,-1 * xSpeed)
+
+        # Set the velocity depending on the axis position
+        left_motor_group.set_velocity(leftMotorPercent,PERCENT)
+        right_motor_group.set_velocity(rightMotorPercent,PERCENT)
+    else:
+        left_motor_group.stop(COAST)
+        right_motor_group.stop(COAST)
+
+    return
+
+
 def launchCatapult():
     while(switch.pressing() == True):
         1 == 1 # loop until switch is released and catapult is fired
@@ -422,10 +467,17 @@ def launchCatapult():
         catapult_motor.stop()
         return
     
-       
+
+#TODO: (Partially Done) Have the catapult auto-retract after firing, without needing to hold down the button.
+
+#TODO: (WIP) Add the ability to turn while moving, without needing to stop and turn in place.
+
+#TODO: (Done) Change the catapult launch button from Y to a different button, ideally X or the left trigger. Currently the most ergonomic position has my thumb on x, and I have to reach for Y.
+
+#TODO: (Done) Make arcade the default drive mode instead of tank.
 
 def user_control():
-    Control_Mode = mode.TANK
+    Control_Mode = mode.ARCADE
     allowLaunch = False
     print(TILEREVOLUTIONS)
     print(TILEDISTANCE)
@@ -439,7 +491,7 @@ def user_control():
         elif(controller.buttonDown.pressing()): # D-pad Down
             Control_Mode = mode.ARCADE_SPEED
         elif(controller.buttonLeft.pressing()): # D-pad Left
-            Control_Mode = mode.TANK # Extra mode slot
+            Control_Mode = mode.EXPERIMENTAL # Extra mode slot
         
 
         R1 = bool(controller.buttonR1.pressing())
@@ -474,8 +526,18 @@ def user_control():
            # catapult_motor.spin_for(direction=FORWARD,rotation=45,units=RotationUnits.DEG,velocity=50,units_v=VelocityUnits.PERCENT,wait=False)
             
 
+        controller.screen.clear_line(1)
+        controller.screen.set_cursor(1,1)
+        controller.screen.print("Testing")
         
-
+        # Possible things to display:
+        #   Drive mode
+        #   Catapult Ready
+        #   Motor Temperatures
+        #   Intake On/Off
+        #   Brain Battery (Make sure it stays)
+        #   Brain timer (optional)
+        
 
         #if(controller.buttonY.pressing()):
         #    launch = not launch
@@ -502,6 +564,8 @@ def user_control():
             arcade_drive()
         elif(Control_Mode == mode.ARCADE_SPEED):
             arcade_speed_drive()
+        elif(Control_Mode == mode.EXPERIMENTAL):
+            experimental_drive()
         
         
         #match Control_Mode :
