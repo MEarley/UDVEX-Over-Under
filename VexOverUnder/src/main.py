@@ -417,37 +417,19 @@ def experimental_drive():
 
     # Controls for Up-Down and Left-Right movement
     leftAxis_UpDwn = controller.axis3.position()
-    leftAxis_LR = controller.axis4.position()
+    rightAxis_LR = controller.axis1.position()
 
     # Motor speed percentage based on axis
     ySpeed = leftAxis_UpDwn 
-    xSpeed = leftAxis_LR
+    xSpeed = rightAxis_LR
 
-    if(ySpeed > 5 or xSpeed > 5):
+    if(abs(ySpeed) > 5 or abs(xSpeed) > 5):
         left_motor_group.spin(FORWARD)
         right_motor_group.spin(FORWARD)
 
-        # Determines whether or not the robot should be going forward or backward, left or right
-        isLeftNegative = False if ySpeed + xSpeed >= 0 else True
-        isRightNegative = False if ySpeed - xSpeed >= 0 else True
-
-        leftMotorPercent = 0
-        rightMotorPercent = 0
-
-        # Determines the vector between both axis positions
-        if(isLeftNegative):
-            leftMotorPercent = -1 * math.hypot(ySpeed,xSpeed)
-        else:
-            leftMotorPercent = -1 * math.hypot(ySpeed,xSpeed)
-        
-        if(isRightNegative):
-            rightMotorPercent = -1 * math.hypot(ySpeed,-1 * xSpeed)
-        else:
-            rightMotorPercent = math.hypot(ySpeed,-1 * xSpeed)
-
         # Set the velocity depending on the axis position
-        left_motor_group.set_velocity(leftMotorPercent,PERCENT)
-        right_motor_group.set_velocity(rightMotorPercent,PERCENT)
+        left_motor_group.set_velocity(ySpeed + xSpeed,PERCENT)
+        right_motor_group.set_velocity(ySpeed - xSpeed,PERCENT)
     else:
         left_motor_group.stop(COAST)
         right_motor_group.stop(COAST)
@@ -455,22 +437,31 @@ def experimental_drive():
     return
 
 
-def launchCatapult():
-    while(switch.pressing() == True):
-        1 == 1 # loop until switch is released and catapult is fired
-    catapult_motor.stop()
-    return
-    while((switch.pressing() == False)):
-        catapult_motor.spin(FORWARD)
+def controllerDisplay(ctrl_mode):
+    controller.screen.clear_screen()
+    controller.screen.set_cursor(1,0)
+    if(ctrl_mode == mode.TANK):
+        controller.screen.print("Tank Mode")
+    elif(ctrl_mode == mode.ARCADE):
+        controller.screen.print("Arcade Mode")
+    elif(ctrl_mode == mode.ARCADE_SPEED):
+        controller.screen.print("Arcade-Speed Mode")
+    elif(ctrl_mode == mode.EXPERIMENTAL):
+        controller.screen.print("Experimental Mode")
 
-    if(allowLaunch == False):
-        catapult_motor.stop()
-        return
+    controller.screen.set_cursor(1,19)
+    controller.screen.print(brain.battery.capacity())
+    controller.screen.set_cursor(2,0)
+    controller.screen.print("R1: %d R2: %d R3: %d" %(right_motor_1.temperature(), right_motor_2.temperature(),right_motor_3.temperature()))
+    controller.screen.set_cursor(3,0)
+    controller.screen.print("L1: %d L2: %d L3: %d" %(left_motor_1.temperature(), left_motor_2.temperature(),left_motor_3.temperature()))
     
+    return
 
-#TODO: (Partially Done) Have the catapult auto-retract after firing, without needing to hold down the button.
 
-#TODO: (WIP) Add the ability to turn while moving, without needing to stop and turn in place.
+#TODO: (Done) Have the catapult auto-retract after firing, without needing to hold down the button.
+
+#TODO: (Done) Add the ability to turn while moving, without needing to stop and turn in place.
 
 #TODO: (Done) Change the catapult launch button from Y to a different button, ideally X or the left trigger. Currently the most ergonomic position has my thumb on x, and I have to reach for Y.
 
@@ -478,11 +469,13 @@ def launchCatapult():
 
 def user_control():
     Control_Mode = mode.ARCADE
-    allowLaunch = False
+    count = 0
     print(TILEREVOLUTIONS)
     print(TILEDISTANCE)
 
     while(True):
+        count += 20
+
         # Switch between control modes
         if(controller.buttonUp.pressing()): # D-pad Up
             Control_Mode = mode.TANK
@@ -508,46 +501,23 @@ def user_control():
             intake_motor.stop()
         
 
+        # Automatically wind up catapult. Launch using L1
         L1 = bool(controller.buttonL1.pressing())
-        if(switch.pressing() == False):
-            while((switch.pressing() == False)):
-                catapult_motor.spin(FORWARD)
+        if(switch.pressing() == False or L1 == True):
+            catapult_motor.spin(FORWARD)
+        elif(L1 == False):
             catapult_motor.stop()
         
-        #controller.buttonL1.pressed(launchCatapult)
-        if(L1 == True):
-            while(switch.pressing() == True):
-                catapult_motor.spin(FORWARD) # loop until switch is released and catapult is fired
-            catapult_motor.stop()
+        #if(switch.pressing() == True and L1 == True):
+            #if(switch.pressing() == True):
+                #catapult_motor.spin(FORWARD) # loop until switch is released and catapult is fired
+            #catapult_motor.stop()
         #controller.buttonY.pressed(launchCatapult,arg=tuple([True]))
-
-
-        #if(controller.buttonY.pressing() == True):
-           # catapult_motor.spin_for(direction=FORWARD,rotation=45,units=RotationUnits.DEG,velocity=50,units_v=VelocityUnits.PERCENT,wait=False)
-            
-
-        controller.screen.clear_line(1)
-        controller.screen.set_cursor(1,1)
-        controller.screen.print("Testing")
+    
+        if(count == 1000):
+            controllerDisplay(Control_Mode)
+            count = 0
         
-        # Possible things to display:
-        #   Drive mode
-        #   Catapult Ready
-        #   Motor Temperatures
-        #   Intake On/Off
-        #   Brain Battery (Make sure it stays)
-        #   Brain timer (optional)
-        
-
-        #if(controller.buttonY.pressing()):
-        #    launch = not launch
-        #    if(launch == True):
-        #        brain.screen.set_pen_color(Color.WHITE)
-        #        brain.screen.draw_line(10,10,50,50)
-        #        brain.screen.draw_line(50,10,10,50)
-        #    wait(1, MSEC)
-        # and launch == True or ((catapult_motor_FW.position() % 360) <= 160)
-
         # Catapult Controls and (allowLaunch or (not switch.pressing()))
         #if((L1 == True and (switch.pressing() == False)) or controller.buttonY.pressing() == True):
             #print(catapult_motor_FW.position() % 360)
