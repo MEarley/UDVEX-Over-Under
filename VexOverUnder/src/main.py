@@ -45,18 +45,18 @@ controller = Controller()
 switch = Limit(brain.three_wire_port.a)
 
 global RotationPosition
-RotationPosition = 0
+RotationPosition = 180
 
 global field
-field = [['X','O','O','O','O','X'],
+field = [['X','O','O','O','^','X'],
          ['O','O','O','O','O','O'],
          ['X','O','O','O','O','X'],
          ['X','O','O','O','O','X'],
          ['O','O','O','O','O','O'],
-         ['X','^','O','O','O','X']]
+         ['X','O','O','O','O','X']]
 
 global robotPosition
-robotPosition = [5,1]
+robotPosition = [0,4]
 
 # Axial1 Positioning
 #               0
@@ -193,9 +193,9 @@ def right_spin_volt(direction,voltage):
     #right_motor_4.spin(direction,voltage,VOLT)
     return
 
-def autoDriveForward(tiles: int):
+def autoDriveForward(tiles):
 
-    t = TILEREVOLUTIONS * tiles
+    t = int(TILEREVOLUTIONS * tiles)
     avg_pos = 0
     left_motor_group.set_position(value=0.0,units=DEGREES)
     right_motor_group.set_position(value=0.0,units=DEGREES)
@@ -248,6 +248,7 @@ def autoDriveForward(tiles: int):
     #field[start[0]][start[1]] = 'S'
     return
 
+# Rotates robot using P-Control
 def rotateBy(t: int):
 
     isNegative = bool(t < 0) 
@@ -312,7 +313,7 @@ def rotateBy(t: int):
 
     return
 
-# Traverses by x (horizontal) first. then y (vertical)
+# Traverses by x (horizontal) first. then y (vertical) (P-Control)
 def goToPosition(x,y):
 
     # Drive to position x
@@ -372,6 +373,21 @@ def goToPosition(x,y):
 
     return
 
+def automControllerDisplay():
+    controller.screen.clear_screen()
+    for w in range(6):
+        controller.screen.set_cursor(w,0)
+        for h in range(6):
+            controller.screen.print(field[w][h])
+    return
+
+def toggleIntake(toggle: bool):
+    if(toggle == True):
+        intake_motor.spin(REVERSE)
+    else:
+        intake_motor.stop()
+
+
 def pre_autonomous():
     brain.screen.clear_screen()
     brain.screen.print("Pre-auton Mode")
@@ -402,9 +418,52 @@ def autonomous():
     #rotateBy(ROTATE90)
     #rotateBy(-1 * ROTATE90)
     #autoDriveForward(1)
-    goToPosition(3,2)
-    goToPosition(3,1)
-    goToPosition(5,1)
+
+    while(not switch.pressing()):
+        catapult_motor.spin(FORWARD)
+    catapult_motor.stop()
+  
+    autoDriveForward(0.3)
+    rotateBy(int(ROTATE90 / -2)) 
+    autoDriveForward(0.5)
+    rotateBy(int(-1* ROTATE90)) 
+    toggleIntake(True) 
+    autoDriveForward(0.65)
+    wait(1, SECONDS)
+    autoDriveForward(-0.65)
+    wait(2, SECONDS)
+    toggleIntake(False)
+    
+
+    #autoDriveForward(1.25)
+    #rotateBy(int(ROTATE90 / 1.5) + (ROTATE90 * 2)) 
+    #toggleIntake(True) 
+    #autoDriveForward(1.15)
+    #wait(0.5, SECONDS)
+    #autoDriveForward(-1.15)
+    #wait(0.5, SECONDS)
+    #toggleIntake(False)
+
+    while(switch.pressing()):
+        catapult_motor.spin(FORWARD)
+
+    while(not switch.pressing()):
+        catapult_motor.spin(FORWARD)
+    catapult_motor.stop()
+
+
+    controller.screen.clear_screen()
+    for w in range(6):
+        controller.screen.set_cursor(w,0)
+        for h in range(6):
+            controller.screen.print(field[w][h])
+
+    return
+
+    goToPosition(2,4)
+    goToPosition(2,3)
+    goToPosition(2,4)
+    goToPosition(0,4)
 
     return 
     t = TILEREVOLUTIONS * 360       # Convert revs to degrees
