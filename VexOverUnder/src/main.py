@@ -17,10 +17,15 @@ import math
 # Constants
 WHEELSIZE = 2.75    # Inches Diameter
 TILEDISTANCE = (2 * 12) # 2 feet
-TILEREVOLUTIONS = TILEDISTANCE / (math.pi * WHEELSIZE)  # Revolutions per Tile (S / (PI)*Diameter = Revolutions )
+TILEREVOLUTIONS = 1400
+#TILEDISTANCE / (math.pi * WHEELSIZE)  # Revolutions per Tile (S / (PI)*Diameter = Revolutions )
+ROTATE90 = 600
+AUTOMAXVOLTAGE = 8
+AUTOMINVOLTAGE = 5
 EXPONENTIALCONSTANT = 21.71472409516259138255644594583
 ROTATIONALOFFSET = 7.5
 KP = 0.01
+LR_KP = 0.05
 
 class mode():
     TANK = 1
@@ -41,6 +46,17 @@ switch = Limit(brain.three_wire_port.a)
 
 global RotationPosition
 RotationPosition = 0
+
+global field
+field = [['X','O','O','O','O','X'],
+         ['O','O','O','O','O','O'],
+         ['X','O','O','O','O','X'],
+         ['X','O','O','O','O','X'],
+         ['O','O','O','O','O','O'],
+         ['X','^','O','O','O','X']]
+
+global robotPosition
+robotPosition = [5,1]
 
 # Axial1 Positioning
 #               0
@@ -177,6 +193,185 @@ def right_spin_volt(direction,voltage):
     #right_motor_4.spin(direction,voltage,VOLT)
     return
 
+def autoDriveForward(tiles: int):
+
+    t = TILEREVOLUTIONS * tiles
+    avg_pos = 0
+    left_motor_group.set_position(value=0.0,units=DEGREES)
+    right_motor_group.set_position(value=0.0,units=DEGREES)
+
+    while(not(avg_pos < t + 1 and avg_pos > t - 1)):
+        left_pos = left_motor_group.position()
+        right_pos = right_motor_group.position()
+        avg_pos = ((left_pos  + right_pos ) / 2)    # Average motor position
+        drive = PIDControl(t,avg_pos)   #drive based on error between postion and target position
+        
+        # Dont allow drive to go below minimum voltage/speed
+        if(drive < AUTOMINVOLTAGE and drive > 0):
+            drive = AUTOMINVOLTAGE
+        elif(drive > (-1 * AUTOMINVOLTAGE) and drive < 0):
+            drive = -1 * AUTOMINVOLTAGE
+
+        # Don't allow drive to go above maximum voltage/speed
+        if(drive > AUTOMAXVOLTAGE):
+            drive = AUTOMAXVOLTAGE
+        elif(drive < (-1 * AUTOMAXVOLTAGE)):
+            drive = -1 * AUTOMAXVOLTAGE
+
+        # P-control between left and right motors
+        left_drive = drive
+        right_drive = drive
+        if(left_pos  > right_pos ):
+            left_drive += (right_pos - left_pos ) * LR_KP
+        else:
+            right_drive += (left_pos - right_pos ) * LR_KP
+            
+
+
+        print("Rotational Position: ",end="")
+        print(avg_pos)
+        print("Set Drive: ",end="")
+        print(drive)
+        print(left_drive)
+        print(right_drive)
+        print("Target Position: ",end="")
+        print(t)
+        print("Left & Right Position: ",end="")
+        print(left_pos )
+        print(right_pos )
+        left_spin_volt(FORWARD,left_drive)
+        right_spin_volt(FORWARD,right_drive)
+    left_motor_group.stop(BRAKE)
+    right_motor_group.stop(BRAKE)
+    #field[start[0]][start[1]] = 'O'
+    #start[1] -= 1
+    #field[start[0]][start[1]] = 'S'
+    return
+
+def rotateBy(t: int):
+
+    isNegative = bool(t < 0) 
+    t = abs(t)
+    avg_pos = 0
+    left_motor_group.set_position(value=0.0,units=DEGREES)
+    right_motor_group.set_position(value=0.0,units=DEGREES)
+
+    while(not(avg_pos < t + 1 and avg_pos > t - 1)):
+        left_pos = abs(left_motor_group.position())
+        right_pos = abs(right_motor_group.position())
+        avg_pos = ((left_pos + right_pos) / 2)    # Average motor position
+        drive = PIDControl(t,avg_pos)   #drive based on error between postion and target position
+        
+        # Dont allow drive to go below minimum voltage/speed
+        if(drive < AUTOMINVOLTAGE and drive > 0):
+            drive = AUTOMINVOLTAGE
+        elif(drive > (-1 * AUTOMINVOLTAGE) and drive < 0):
+            drive = -1 * AUTOMINVOLTAGE
+
+        # Don't allow drive to go above maximum voltage/speed
+        if(drive > AUTOMAXVOLTAGE):
+            drive = AUTOMAXVOLTAGE
+        elif(drive < (-1 * AUTOMAXVOLTAGE)):
+            drive = -1 * AUTOMAXVOLTAGE
+
+        # P-control between left and right motors
+        left_drive = drive
+        right_drive = drive
+        if(left_pos > right_pos):
+            left_drive += (right_pos - left_pos) * LR_KP
+        else:
+            right_drive += (left_pos - right_pos) * LR_KP
+            
+
+
+        print("Rotational Position: ",end="")
+        print(avg_pos)
+        print("Set Drive: ",end="")
+        print(drive)
+        print(left_drive)
+        print(right_drive)
+        print("Target Position: ",end="")
+        print(t)
+        print("Left & Right Position: ",end="")
+        print(left_pos)
+        print(right_pos)
+
+        # Negative = counter-clockwise
+        # Positive = clockwise
+        if(isNegative == True):
+            left_spin_volt(REVERSE,left_drive)
+            right_spin_volt(FORWARD,right_drive)
+        else:
+            left_spin_volt(FORWARD,left_drive)
+            right_spin_volt(REVERSE,right_drive)
+            
+
+    left_motor_group.stop(BRAKE)
+    right_motor_group.stop(BRAKE)
+
+
+    return
+
+# Traverses by x (horizontal) first. then y (vertical)
+def goToPosition(x,y):
+
+    # Drive to position x
+    global RotationPosition
+    if(x > robotPosition[0]):
+        # If need to move backwards, face 180 degrees
+        if(RotationPosition > 180):
+            turns = 0
+            while(RotationPosition != 180):
+                RotationPosition -= 90
+                turns -= 1
+            rotateBy(ROTATE90 * turns)
+        elif(RotationPosition < 180):
+            turns = 0
+            while(RotationPosition != 180):
+                RotationPosition += 90
+                turns += 1
+            rotateBy(ROTATE90 * turns)
+        autoDriveForward(x-robotPosition[0])
+    else:   
+        autoDriveForward(robotPosition[0]-x)
+    robotPosition[0] = x
+
+    # Drive to position y
+    if(y > robotPosition[1]):
+        # If need to move right, face 90 degrees
+        if(RotationPosition > 90):
+            turns = 0
+            while(RotationPosition != 90):
+                RotationPosition -= 90
+                turns -= 1
+            rotateBy(ROTATE90 * turns)
+        elif(RotationPosition < 90):
+            turns = 0
+            while(RotationPosition != 90):
+                RotationPosition += 90
+                turns += 1
+            rotateBy(ROTATE90 * turns)
+        autoDriveForward(y-robotPosition[1])
+    else: 
+        # If need to move left, face 270 degrees
+        if(RotationPosition > 270):
+            turns = 0
+            while(RotationPosition != 270):
+                RotationPosition -= 90
+                turns -= 1
+            rotateBy(ROTATE90 * turns)
+        elif(RotationPosition < 270):
+            turns = 0
+            while(RotationPosition != 270):
+                RotationPosition += 90
+                turns += 1
+            rotateBy(ROTATE90 * turns)
+        autoDriveForward(robotPosition[1]-y)
+    robotPosition[1] = y
+    
+
+    return
+
 def pre_autonomous():
     brain.screen.clear_screen()
     brain.screen.print("Pre-auton Mode")
@@ -186,6 +381,32 @@ def pre_autonomous():
 def autonomous():
     brain.screen.clear_screen(Color.CYAN)
     brain.screen.print("Autonomous Mode")
+    
+    controller.screen.clear_screen()
+    for w in range(6):
+        controller.screen.set_cursor(w,0)
+        for h in range(6):
+            controller.screen.print(field[w][h])
+    
+    
+    
+    
+    #      0   1   2   3   4   5
+    #  0 ['X','O','O','O','O','X']
+    #  1 ['O','O','O','O','O','O']
+    #  2 ['X','O','O','O','O','X']
+    #  3 ['X','O','O','O','O','X']
+    #  4 ['O','O','O','O','O','O']
+    #  5 ['X','^','O','O','O','X']
+    #autoDriveForward(2)
+    #rotateBy(ROTATE90)
+    #rotateBy(-1 * ROTATE90)
+    #autoDriveForward(1)
+    goToPosition(3,2)
+    goToPosition(3,1)
+    goToPosition(5,1)
+
+    return 
     t = TILEREVOLUTIONS * 360       # Convert revs to degrees
     pos = 0
 
@@ -200,7 +421,16 @@ def autonomous():
         print(t)
         left_spin_volt(FORWARD,drive)
         right_spin_volt(FORWARD,drive)
-        
+    field[start[0]][start[1]] = 'O'
+    start[1] -= 1
+    field[start[0]][start[1]] = 'S'
+
+    controller.screen.clear_screen()
+    for w in range(5):
+        for h in range(5):
+            controller.screen.set_cursor(w,h)
+            controller.screen.print(field[w][h])
+
 
     return
     # Go To Test
