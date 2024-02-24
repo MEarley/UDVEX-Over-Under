@@ -30,7 +30,7 @@ LR_KP = 0.05
 class mode():
     TANK = 1
     ARCADE = 2
-    ARCADE_SPEED = 3
+    DUAL_STICK = 3
     EXPERIMENTAL = 4
 
 
@@ -57,6 +57,9 @@ field = [['X','O','O','O','^','X'],
 
 global robotPosition
 robotPosition = [0,4]
+
+global firingMode
+firingMode = True
 
 # Axial1 Positioning
 #               0
@@ -199,6 +202,7 @@ def autoDriveForward(tiles):
     avg_pos = 0
     left_motor_group.set_position(value=0.0,units=DEGREES)
     right_motor_group.set_position(value=0.0,units=DEGREES)
+    start_time = brain.timer.time(SECONDS)
 
     while(not(avg_pos < t + 1 and avg_pos > t - 1)):
         left_pos = left_motor_group.position()
@@ -241,6 +245,10 @@ def autoDriveForward(tiles):
         print(right_pos )
         left_spin_volt(FORWARD,left_drive)
         right_spin_volt(FORWARD,right_drive)
+        elapsed_time = brain.timer.time(SECONDS) - start_time
+        if(elapsed_time > 3):
+            break # Fail safe (shutdown if robot gets stuck and can't move)
+
     left_motor_group.stop(BRAKE)
     right_motor_group.stop(BRAKE)
     #field[start[0]][start[1]] = 'O'
@@ -381,9 +389,9 @@ def automControllerDisplay():
             controller.screen.print(field[w][h])
     return
 
-def toggleIntake(toggle: bool):
+def toggleIntake(toggle: bool,direct):
     if(toggle == True):
-        intake_motor.spin(REVERSE)
+        intake_motor.spin(direct)
     else:
         intake_motor.stop()
 
@@ -419,21 +427,102 @@ def autonomous():
     #rotateBy(-1 * ROTATE90)
     #autoDriveForward(1)
 
-    while(not switch.pressing()):
-        catapult_motor.spin(FORWARD)
-    catapult_motor.stop()
-  
+    
+    
+    """
+    #Push Alliance triball to goal
+    rotateBy(int(ROTATE90 / -2)) 
+    autoDriveForward(-1)
+    rotateBy(int(ROTATE90 / 2))
+    autoDriveForward(0.5)
+
+    return
+
+    #Push Alliance triball to goal
     autoDriveForward(0.3)
     rotateBy(int(ROTATE90 / -2)) 
+    autoDriveForward(1)
+    rotateBy(int(ROTATE90 / 2))
     autoDriveForward(0.5)
-    rotateBy(int(-1* ROTATE90)) 
+
+    #Go to corner
+    autoDriveForward(-0.5)
+    rotateBy(int(ROTATE90 / 2) + ROTATE90)
+    autoDriveForward(0.5)
+    rotateBy(ROTATE90)
     toggleIntake(True) 
-    autoDriveForward(0.65)
+    autoDriveForward(0.55)
+
+    # Pick up triball
     wait(1, SECONDS)
     autoDriveForward(-0.65)
     wait(2, SECONDS)
     toggleIntake(False)
+
+    # Launch triball
+    while(switch.pressing()):
+        catapult_motor.spin(FORWARD)
+
+    while(not switch.pressing()):
+        catapult_motor.spin(FORWARD)
+    catapult_motor.stop()
     
+    return
+    """
+
+    # Lower catapult
+    while(not switch.pressing()):
+        catapult_motor.spin(FORWARD)
+    catapult_motor.stop()
+
+    # Raise catapult
+    while(switch.pressing()):
+        catapult_motor.spin(FORWARD)
+    catapult_motor.stop()
+
+    # Grab corner triball from start
+    autoDriveForward(0.3)
+    rotateBy(int(ROTATE90 / -2)) 
+    autoDriveForward(0.6)
+    rotateBy(int(-1.1* ROTATE90)) 
+    toggleIntake(True, REVERSE) 
+    autoDriveForward(0.55)
+    wait(1, SECONDS)
+    autoDriveForward(-1.5)
+    wait(1, SECONDS)
+    toggleIntake(False, REVERSE)
+
+    # Go to goal
+    rotateBy(int(ROTATE90 / 2) + int(ROTATE90 * 1.1)) 
+    autoDriveForward(0.7)
+    rotateBy(int(-ROTATE90 * 1.1))
+    toggleIntake(True, FORWARD)
+
+    # Push into goal
+    autoDriveForward(0.8)
+    wait(0.5, SECONDS)
+    autoDriveForward(-0.5)
+    toggleIntake(False, FORWARD)
+
+    # Turn around and shove into goal
+    rotateBy(ROTATE90 * 2)
+    autoDriveForward(-0.6)
+
+    # Touch Elevation Bar
+    autoDriveForward(1.3)
+    autoDriveForward(-0.3)
+    rotateBy(ROTATE90)
+    autoDriveForward(1.2)
+    rotateBy(int(-ROTATE90/2))
+    autoDriveForward(0.5)
+
+
+    # Lower catapult
+    while(not switch.pressing()):
+        catapult_motor.spin(FORWARD)
+    catapult_motor.stop()
+    
+    return
 
     #autoDriveForward(1.25)
     #rotateBy(int(ROTATE90 / 1.5) + (ROTATE90 * 2)) 
@@ -444,6 +533,7 @@ def autonomous():
     #wait(0.5, SECONDS)
     #toggleIntake(False)
 
+    # Launch tri ball 
     while(switch.pressing()):
         catapult_motor.spin(FORWARD)
 
@@ -459,130 +549,6 @@ def autonomous():
             controller.screen.print(field[w][h])
 
     return
-
-    goToPosition(2,4)
-    goToPosition(2,3)
-    goToPosition(2,4)
-    goToPosition(0,4)
-
-    return 
-    t = TILEREVOLUTIONS * 360       # Convert revs to degrees
-    pos = 0
-
-    while(not(pos < t + 1 and pos > t - 1)):
-        pos = ((left_motor_group.position() + right_motor_group.position()) / 2)    # Average motor position
-        drive = PIDControl(t,pos)   #drive based on error between postion and target position
-        print("Rotational Position: ",end="")
-        print(pos)
-        print("Set Drive: ",end="")
-        print(drive)
-        print("Target Position: ",end="")
-        print(t)
-        left_spin_volt(FORWARD,drive)
-        right_spin_volt(FORWARD,drive)
-    field[start[0]][start[1]] = 'O'
-    start[1] -= 1
-    field[start[0]][start[1]] = 'S'
-
-    controller.screen.clear_screen()
-    for w in range(5):
-        for h in range(5):
-            controller.screen.set_cursor(w,h)
-            controller.screen.print(field[w][h])
-
-
-    return
-    # Go To Test
-    goTo(0,1)
-    rotateTo(90)
-    goTo(0,1)
-    rotateTo(180)
-    goTo(0,1)
-    rotateTo(270)
-    goTo(0,1)
-    rotateTo(0)
-    goTo(0,1)
-   
-
-    return
-    rotateTo(90)
-    rotateTo(0)
-    rotateTo(180)
-    rotateTo(90)
-    rotateTo(0)
-    rotateTo(180)
-    
-    rotateTo(270)
-    rotateTo(225)
-
-    rotateTo(45)
-    rotateTo(135)
-    rotateTo(0)
-    return
-    #Diamond 
-    goTo(1,1)
-    goTo(1,0)
-    goTo(1,0)
-    goTo(1,0)
-
-    #Square
-    goTo(0,1)
-    goTo(1,0)
-    goTo(1,0)
-    goTo(1,0)
-
-    goTo(-1,2)
-    goTo(0,-1)
-    goTo(0,1)
-
-    rotateTo(90)
-    return
-
-    goTo(-1,-1)
-    wait(0.5, SECONDS)
-    goTo(0,-1)
-    wait(0.5,SECONDS)
-    
-    
-    #Square Test
-    goTo(0,1)
-    wait(0.5, SECONDS)
-    goTo(1,0)
-    wait(0.5, SECONDS)
-    goTo(1,0)
-    wait(0.5, SECONDS)
-    goTo(1,0)
-    wait(0.5, SECONDS)
-
-    goTo(0,-1)
-    wait(1,SECONDS)
-
-    # Reverse
-    goTo(-1,0)
-    wait(0.5, SECONDS)
-    goTo(-1,0)
-    wait(0.5, SECONDS)
-    goTo(-1,0)
-    wait(0.5, SECONDS)
-    goTo(0,-1)
-    wait(0.5, SECONDS)
-
-    
-    wait(0.5, SECONDS)
-    #Diamond Test
-    goTo(1,-1)
-    wait(0.5, SECONDS)
-    goTo(1,-1)
-    wait(0.5, SECONDS)
-    goTo(1,-1)
-    wait(0.5, SECONDS)
-    goTo(1,-1)
-    wait(0.5, SECONDS)
-
-    goTo(-1,-1)
-
-    #left_motor_group.spin_to_position(rotation=180,units=RotationUnits.DEG,velocity=50,wait=False)
-    #right_motor_group.spin_to_position(rotation=180,units=RotationUnits.DEG,velocity=50,wait=True)
 
 
 def tank_drive():
@@ -613,11 +579,6 @@ def tank_drive():
     else:
         left_motor_group.stop(COAST)
 
-    #right_speed = controller.axis2.position()
-
-    # Calculate left velocity percentage based on logarithmic scale (0 < rightAxis_UpDwn <= 100)
-    #right_speed = (int)(50.0 * (math.log(abs(rightAxis_UpDwn)+1,10)))
-
     right_speed = (int)(math.exp(abs(rightAxis_UpDwn) / EXPONENTIALCONSTANT))
 
     if(right_speed > 5):
@@ -635,40 +596,6 @@ def tank_drive():
 def arcade_drive():
     brain.screen.clear_screen(Color.BLUE)
     brain.screen.print("Arcade-Drive Control")
-
-    # Controls for Up-Down and Left-Right movement
-    leftAxis_UpDwn = controller.axis3.position()
-    leftAxis_LR = controller.axis4.position()
-
-    # Determines whether or not the robot should be going forward or backward, left or right
-    isNegativeY = False if leftAxis_UpDwn >= 0 else True
-    isNegativeX = False if leftAxis_LR >= 0 else True
-
-    # Calculate exponentional based speed
-    ySpeed = (int)(math.exp(abs(leftAxis_UpDwn) / EXPONENTIALCONSTANT))
-    xSpeed = (int)(math.exp(abs(leftAxis_LR) / EXPONENTIALCONSTANT))
-
-    if(ySpeed > 5 or xSpeed > 5):
-        left_motor_group.spin(FORWARD)
-        right_motor_group.spin(FORWARD)
-
-        if(isNegativeY):
-            ySpeed *= -1
-        if(isNegativeX):
-            xSpeed *= -1
-
-        # Set the velocity depending on the axis position
-        left_motor_group.set_velocity(ySpeed + xSpeed,PERCENT)
-        right_motor_group.set_velocity(ySpeed - xSpeed,PERCENT)
-    else:
-        left_motor_group.stop(COAST)
-        right_motor_group.stop(COAST)
-
-    return
-
-def arcade_speed_drive():
-    brain.screen.clear_screen(Color.PURPLE)
-    brain.screen.print("Arcade-Drive-Speed Control")
 
     # Controls for Up-Down and Left-Right movement
     leftAxis_UpDwn = controller.axis3.position()
@@ -700,9 +627,9 @@ def arcade_speed_drive():
 
     return
 
-def experimental_drive():
-    brain.screen.clear_screen(Color.ORANGE)
-    brain.screen.print("Experimental Control")
+def dual_stick_drive():
+    brain.screen.clear_screen(Color.PURPLE)
+    brain.screen.print("Dual-Stick Drive Control")
 
     # Controls for Up-Down and Left-Right movement
     leftAxis_UpDwn = controller.axis3.position()
@@ -725,55 +652,115 @@ def experimental_drive():
 
     return
 
+def experimental_drive():
+    brain.screen.clear_screen(Color.ORANGE)
+    brain.screen.print("Experimental Control")
+
+    # Controls for Up-Down and Left-Right movement
+    leftAxis_UpDwn = controller.axis3.position() / 100
+    rightAxis_LR = controller.axis1.position() / 100
+
+    # Motor speed percentage based on cubed function
+    ySpeed = leftAxis_UpDwn ** 3
+    xSpeed = rightAxis_LR ** 3
+
+    if(abs(ySpeed) > 0.05 or abs(xSpeed) > 0.05):
+        left_motor_group.spin(FORWARD)
+        right_motor_group.spin(FORWARD)
+
+        # Set the velocity depending on the axis position
+        left_motor_group.set_velocity((ySpeed + xSpeed) * 100,PERCENT)
+        right_motor_group.set_velocity((ySpeed - xSpeed) * 100,PERCENT)
+    else:
+        left_motor_group.stop(COAST)
+        right_motor_group.stop(COAST)
+
+
+    """
+    # Controls for Up-Down and Left-Right movement
+    leftAxis_UpDwn = controller.axis3.position() / 100
+    leftAxis_LR = controller.axis4.position() / 100
+
+    # Calculate exponentional based speed
+    ySpeed = (leftAxis_UpDwn ** 3)
+    xSpeed = (leftAxis_LR ** 3)
+
+    if(abs(ySpeed) > 0.05 or abs(xSpeed) > 0.05):
+        left_motor_group.spin(FORWARD)
+        right_motor_group.spin(FORWARD)
+
+        # Set the velocity depending on the axis position
+        left_motor_group.set_velocity((ySpeed + xSpeed) * 100,PERCENT)
+        right_motor_group.set_velocity((ySpeed - xSpeed) * 100,PERCENT)
+    else:
+        left_motor_group.stop(COAST)
+        right_motor_group.stop(COAST)
+    """
+    return
+
 
 def controllerDisplay(ctrl_mode):
     controller.screen.clear_screen()
     controller.screen.set_cursor(1,0)
+
+    # Mode
     if(ctrl_mode == mode.TANK):
         controller.screen.print("Tank Mode")
     elif(ctrl_mode == mode.ARCADE):
         controller.screen.print("Arcade Mode")
-    elif(ctrl_mode == mode.ARCADE_SPEED):
-        controller.screen.print("Arcade-Speed Mode")
+    elif(ctrl_mode == mode.DUAL_STICK):
+        controller.screen.print("Dual-Stick Mode")
     elif(ctrl_mode == mode.EXPERIMENTAL):
         controller.screen.print("Experimental Mode")
 
+    # Battery Percentage
     controller.screen.set_cursor(1,19)
-    controller.screen.print(brain.battery.capacity())
+    batteryPercentage = str(brain.battery.capacity()) + "%"
+    controller.screen.print(batteryPercentage)
+
+    # Display temperature
     controller.screen.set_cursor(2,0)
-    controller.screen.print("R1: %d R2: %d R3: %d" %(right_motor_1.temperature(), right_motor_2.temperature(),right_motor_3.temperature()))
+    controller.screen.print("R1: %d C" %(right_motor_1.temperature()))
     controller.screen.set_cursor(3,0)
-    controller.screen.print("L1: %d L2: %d L3: %d" %(left_motor_1.temperature(), left_motor_2.temperature(),left_motor_3.temperature()))
+    controller.screen.print("L1: %d C" %(left_motor_1.temperature()))
+    
+    controller.screen.set_cursor(3, 10)
+    if(firingMode == True):
+        controller.screen.print("auto")
+    else:
+        controller.screen.print("manual")
+
+    # Check for Overheating
+    if(right_motor_1.temperature() >= 50):
+        controller.screen.set_cursor(2,19)
+        controller.screen.print("OH")
+    if(left_motor_1.temperature() >= 50):
+        controller.screen.set_cursor(3,19)
+        controller.screen.print("OH")
     
     return
 
-
-#TODO: (Done) Have the catapult auto-retract after firing, without needing to hold down the button.
-
-#TODO: (Done) Add the ability to turn while moving, without needing to stop and turn in place.
-
-#TODO: (Done) Change the catapult launch button from Y to a different button, ideally X or the left trigger. Currently the most ergonomic position has my thumb on x, and I have to reach for Y.
-
-#TODO: (Done) Make arcade the default drive mode instead of tank.
-
 def user_control():
+    
     Control_Mode = mode.ARCADE
-    count = 0
-    print(TILEREVOLUTIONS)
-    print(TILEDISTANCE)
+    global firingMode
+    count = 1000
 
-    while(True):
-        count += 20
+    while(True):   
 
         # Switch between control modes
         if(controller.buttonUp.pressing()): # D-pad Up
             Control_Mode = mode.TANK
+            count = 1000
         elif(controller.buttonRight.pressing()): # D-pad Right
             Control_Mode = mode.ARCADE
+            count = 1000
         elif(controller.buttonDown.pressing()): # D-pad Down
-            Control_Mode = mode.ARCADE_SPEED
+            Control_Mode = mode.DUAL_STICK
+            count = 1000
         elif(controller.buttonLeft.pressing()): # D-pad Left
-            Control_Mode = mode.EXPERIMENTAL # Extra mode slot
+            Control_Mode = mode.EXPERIMENTAL
+            count = 1000
         
 
         R1 = bool(controller.buttonR1.pressing())
@@ -789,53 +776,41 @@ def user_control():
         else:
             intake_motor.stop()
         
+        if(firingMode == True):
+            # Automatically wind up catapult. Launch using L1
+            L1 = bool(controller.buttonL1.pressing())
+            if(switch.pressing() == False or L1 == True):
+                catapult_motor.spin(FORWARD)
+            elif(L1 == False):
+                catapult_motor.stop()
+        else:
+            # Manual wind and fire mode (Recommended for emergency use)
+            if(controller.buttonL1.pressing()):
+                catapult_motor.spin(FORWARD)
+            else:
+                catapult_motor.stop()
 
-        # Automatically wind up catapult. Launch using L1
-        L1 = bool(controller.buttonL1.pressing())
-        if(switch.pressing() == False or L1 == True):
-            catapult_motor.spin(FORWARD)
-        elif(L1 == False):
-            catapult_motor.stop()
-        
-        #if(switch.pressing() == True and L1 == True):
-            #if(switch.pressing() == True):
-                #catapult_motor.spin(FORWARD) # loop until switch is released and catapult is fired
-            #catapult_motor.stop()
-        #controller.buttonY.pressed(launchCatapult,arg=tuple([True]))
-    
-        if(count == 1000):
-            controllerDisplay(Control_Mode)
-            count = 0
-        
-        # Catapult Controls and (allowLaunch or (not switch.pressing()))
-        #if((L1 == True and (switch.pressing() == False)) or controller.buttonY.pressing() == True):
-            #print(catapult_motor_FW.position() % 360)
-            #catapult_motor.spin(FORWARD)
-        #else:
-            #catapult_motor.stop()
+        # Switch between Auto-wind and Manual-Wind
+        if(controller.buttonB.pressing() and (count % 20 == 0)):
+            firingMode = not firingMode
 
-        
-
-        # Control Modes: 1 = Manual Tank Drive, 2 = Joystick control, 3 = Joystick control at max speed
+        # Control Modes: 1 = Manual Tank Drive, 2 = Joystick Drive, 3 = Dual-stick Drive 4 = Experimental
         if(Control_Mode == mode.TANK):
             tank_drive()
         elif(Control_Mode == mode.ARCADE):
             arcade_drive()
-        elif(Control_Mode == mode.ARCADE_SPEED):
-            arcade_speed_drive()
+        elif(Control_Mode == mode.DUAL_STICK):
+            dual_stick_drive()
         elif(Control_Mode == mode.EXPERIMENTAL):
             experimental_drive()
-        
-        
-        #match Control_Mode :
-            #case mode.TANK :
-                #tank_drive()
-            #case mode.ARCADE :
-                #arcade_drive()
-            #case mode.ARCADE_SPEED:
-                #arcade_speed_drive()
 
-        wait(20, MSEC)
+
+        if(count >= 1000):
+            controllerDisplay(Control_Mode)
+            count = 0
+
+        wait(10, MSEC)
+        count += 10
 
 # Create Competition Instance
 comp = Competition(user_control,autonomous)
