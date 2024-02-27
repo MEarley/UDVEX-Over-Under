@@ -44,6 +44,9 @@ controller = Controller()
 # Limit Switch
 switch = Limit(brain.three_wire_port.a)
 
+# Bumper
+bumper = Bumper(brain.three_wire_port.b)
+
 global RotationPosition
 RotationPosition = 180
 
@@ -402,6 +405,57 @@ def pre_autonomous():
     wait(1, SECONDS)    
     
 
+def skills_auto():
+    # Release intake
+    toggleIntake(True, FORWARD)
+    wait(1, SECONDS)
+    toggleIntake(False, FORWARD)
+
+    # Lower catapult
+    while(not switch.pressing()):
+        catapult_motor.spin(FORWARD)
+    catapult_motor.stop()
+
+    # Grab corner triball from start
+    autoDriveForward(0.3)
+    rotateBy(int(ROTATE90 / -2)) 
+    autoDriveForward(0.6)
+    rotateBy(int(-1.1* ROTATE90)) 
+    toggleIntake(True, REVERSE) 
+    autoDriveForward(0.55)
+    wait(0.25, SECONDS)
+    autoDriveForward(-0.45)
+    wait(0.25, SECONDS)
+    toggleIntake(False, REVERSE)
+
+    # Fire catapult
+    while(switch.pressing()):
+        catapult_motor.spin(FORWARD)
+    catapult_motor.stop()
+
+    while(True):
+        # Lower catapult
+        while(not switch.pressing()):
+            catapult_motor.spin(FORWARD)
+        catapult_motor.stop()
+
+        # Grab Triball from position
+        toggleIntake(True, REVERSE)
+        autoDriveForward(0.50)
+        wait(0.5, SECONDS)
+        
+        # Pull out Triball
+        autoDriveForward(-0.50)
+        wait(0.75, SECONDS)
+        toggleIntake(False, REVERSE)
+
+        # Fire catapult
+        while(switch.pressing()):
+            catapult_motor.spin(FORWARD)
+        catapult_motor.stop()
+
+    return
+
 def autonomous():
     brain.screen.clear_screen(Color.CYAN)
     brain.screen.print("Autonomous Mode")
@@ -412,7 +466,10 @@ def autonomous():
         for h in range(6):
             controller.screen.print(field[w][h])
     
-    
+    SKILLS = False
+    if(SKILLS  == True):
+        skills_auto()
+        
     
     
     #      0   1   2   3   4   5
@@ -469,22 +526,32 @@ def autonomous():
     
     return
     """
+    # Release intake
+    toggleIntake(True, FORWARD)
+    wait(1, SECONDS)
+    toggleIntake(False, FORWARD)
 
+    """ Currently Broken (2/25)
     # Lower catapult
     while(not switch.pressing()):
         catapult_motor.spin(FORWARD)
     catapult_motor.stop()
 
+    
     # Raise catapult
     while(switch.pressing()):
         catapult_motor.spin(FORWARD)
     catapult_motor.stop()
+    """
 
     # Grab corner triball from start
     autoDriveForward(0.3)
-    rotateBy(int(ROTATE90 / -2)) 
+    rotateBy(int(ROTATE90 / -2))
+    wait(250, MSEC)
     autoDriveForward(0.6)
+    wait(250, MSEC)
     rotateBy(int(-1.1* ROTATE90)) 
+    wait(250, MSEC)
     toggleIntake(True, REVERSE) 
     autoDriveForward(0.55)
     wait(1, SECONDS)
@@ -494,7 +561,9 @@ def autonomous():
 
     # Go to goal
     rotateBy(int(ROTATE90 / 2) + int(ROTATE90 * 1.1)) 
+    wait(250, MSEC)
     autoDriveForward(0.7)
+    wait(250, MSEC)
     rotateBy(int(-ROTATE90 * 1.1))
     toggleIntake(True, FORWARD)
 
@@ -506,8 +575,12 @@ def autonomous():
 
     # Turn around and shove into goal
     rotateBy(ROTATE90 * 2)
+    wait(250, MSEC)
     autoDriveForward(-0.6)
+    wait(500, MSEC)
+    autoDriveForward(0.3)
 
+    
     # Touch Elevation Bar
     autoDriveForward(1.3)
     autoDriveForward(-0.3)
@@ -515,13 +588,14 @@ def autonomous():
     autoDriveForward(1.2)
     rotateBy(int(-ROTATE90/2))
     autoDriveForward(0.5)
-
-
+    
+    """ Broken (2/25)
     # Lower catapult
     while(not switch.pressing()):
         catapult_motor.spin(FORWARD)
     catapult_motor.stop()
-    
+    """
+
     return
 
     #autoDriveForward(1.25)
@@ -532,7 +606,7 @@ def autonomous():
     #autoDriveForward(-1.15)
     #wait(0.5, SECONDS)
     #toggleIntake(False)
-
+    """
     # Launch tri ball 
     while(switch.pressing()):
         catapult_motor.spin(FORWARD)
@@ -549,6 +623,7 @@ def autonomous():
             controller.screen.print(field[w][h])
 
     return
+    """
 
 
 def tank_drive():
@@ -721,6 +796,8 @@ def controllerDisplay(ctrl_mode):
     # Display temperature
     controller.screen.set_cursor(2,0)
     controller.screen.print("R1: %d C" %(right_motor_1.temperature()))
+    controller.screen.set_cursor(2,10)
+    controller.screen.print("Ct: %d C" %(catapult_motor.temperature()))
     controller.screen.set_cursor(3,0)
     controller.screen.print("L1: %d C" %(left_motor_1.temperature()))
     
@@ -733,18 +810,20 @@ def controllerDisplay(ctrl_mode):
     # Check for Overheating
     if(right_motor_1.temperature() >= 50):
         controller.screen.set_cursor(2,19)
-        controller.screen.print("OH")
+        controller.screen.print("HOT")
     if(left_motor_1.temperature() >= 50):
         controller.screen.set_cursor(3,19)
-        controller.screen.print("OH")
+        controller.screen.print("HOT")
     
     return
 
 def user_control():
     
-    Control_Mode = mode.ARCADE
+    Control_Mode = mode.DUAL_STICK
     global firingMode
     count = 1000
+    wait(20, MSEC)
+    print("boo.")
 
     while(True):   
 
@@ -793,6 +872,7 @@ def user_control():
         # Switch between Auto-wind and Manual-Wind
         if(controller.buttonB.pressing() and (count % 20 == 0)):
             firingMode = not firingMode
+            count = 1000
 
         # Control Modes: 1 = Manual Tank Drive, 2 = Joystick Drive, 3 = Dual-stick Drive 4 = Experimental
         if(Control_Mode == mode.TANK):
@@ -804,13 +884,15 @@ def user_control():
         elif(Control_Mode == mode.EXPERIMENTAL):
             experimental_drive()
 
+        if(bumper.pressing()):
+            print("ow")
 
         if(count >= 1000):
             controllerDisplay(Control_Mode)
             count = 0
 
-        wait(10, MSEC)
-        count += 10
+        wait(20, MSEC)
+        count += 20
 
 # Create Competition Instance
 comp = Competition(user_control,autonomous)
