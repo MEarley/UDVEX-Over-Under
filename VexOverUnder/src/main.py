@@ -26,6 +26,9 @@ EXPONENTIALCONSTANT = 21.71472409516259138255644594583
 ROTATIONALOFFSET = 7.5
 KP = 0.01
 LR_KP = 0.05
+SHIFT_TURN_SPEED_RATIO = 0.50
+TURN_SPEED_RATIO = 0.75
+
 
 class mode():
     TANK = 1
@@ -199,7 +202,7 @@ def right_spin_volt(direction,voltage):
     #right_motor_4.spin(direction,voltage,VOLT)
     return
 
-def autoDriveForward(tiles):
+def autoDriveForward(tiles, launchCatapult: bool):
 
     t = int(TILEREVOLUTIONS * tiles)
     avg_pos = 0
@@ -233,6 +236,8 @@ def autoDriveForward(tiles):
         else:
             right_drive += (left_pos - right_pos ) * LR_KP
             
+        if(launchCatapult == True and (avg_pos < t + 100 and avg_pos > t - 100)):
+            catapult_motor.spin(FORWARD)
 
 
         print("Rotational Position: ",end="")
@@ -254,6 +259,15 @@ def autoDriveForward(tiles):
 
     left_motor_group.stop(BRAKE)
     right_motor_group.stop(BRAKE)
+
+    if(launchCatapult == True):
+        wait(500, MSEC)
+
+        # Lower catapult
+        while(not switch.pressing()):
+            catapult_motor.spin(FORWARD)
+        catapult_motor.stop()
+
     #field[start[0]][start[1]] = 'O'
     #start[1] -= 1
     #field[start[0]][start[1]] = 'S'
@@ -343,9 +357,9 @@ def goToPosition(x,y):
                 RotationPosition += 90
                 turns += 1
             rotateBy(ROTATE90 * turns)
-        autoDriveForward(x-robotPosition[0])
+        autoDriveForward(x-robotPosition[0], False)
     else:   
-        autoDriveForward(robotPosition[0]-x)
+        autoDriveForward(robotPosition[0]-x, False)
     robotPosition[0] = x
 
     # Drive to position y
@@ -363,7 +377,7 @@ def goToPosition(x,y):
                 RotationPosition += 90
                 turns += 1
             rotateBy(ROTATE90 * turns)
-        autoDriveForward(y-robotPosition[1])
+        autoDriveForward(y-robotPosition[1], False)
     else: 
         # If need to move left, face 270 degrees
         if(RotationPosition > 270):
@@ -378,7 +392,7 @@ def goToPosition(x,y):
                 RotationPosition += 90
                 turns += 1
             rotateBy(ROTATE90 * turns)
-        autoDriveForward(robotPosition[1]-y)
+        autoDriveForward(robotPosition[1]-y, False)
     robotPosition[1] = y
     
 
@@ -417,14 +431,14 @@ def skills_auto():
     catapult_motor.stop()
 
     # Grab corner triball from start
-    autoDriveForward(0.3)
+    autoDriveForward(0.3, False)
     rotateBy(int(ROTATE90 / -2)) 
-    autoDriveForward(0.6)
+    autoDriveForward(0.6, False)
     rotateBy(int(-1.1* ROTATE90)) 
     toggleIntake(True, REVERSE) 
-    autoDriveForward(0.55)
+    autoDriveForward(0.55, False)
     wait(0.25, SECONDS)
-    autoDriveForward(-0.45)
+    autoDriveForward(-0.45, False)
     wait(0.25, SECONDS)
     toggleIntake(False, REVERSE)
 
@@ -441,11 +455,11 @@ def skills_auto():
 
         # Grab Triball from position
         toggleIntake(True, REVERSE)
-        autoDriveForward(0.50)
+        autoDriveForward(0.50, False)
         wait(0.5, SECONDS)
         
         # Pull out Triball
-        autoDriveForward(-0.50)
+        autoDriveForward(-0.50, False)
         wait(0.75, SECONDS)
         toggleIntake(False, REVERSE)
 
@@ -454,6 +468,76 @@ def skills_auto():
             catapult_motor.spin(FORWARD)
         catapult_motor.stop()
 
+    return
+
+def driver_auto():
+
+    # Release intake
+    toggleIntake(True, FORWARD)
+    wait(1, SECONDS)
+    toggleIntake(False, FORWARD)
+    
+
+    # Go to corner turn
+    autoDriveForward(0.3, False)
+    rotateBy(int(ROTATE90 / -2))
+    wait(250, MSEC)
+    autoDriveForward(0.4, False)
+    wait(250, MSEC)
+    rotateBy(int(-ROTATE90)) 
+    wait(250, MSEC)
+
+    # Launch Preload
+    while(switch.pressing()):
+        catapult_motor.spin(FORWARD)
+    catapult_motor.stop()
+
+    # Grab Triball
+    autoDriveForward(0.55, False)
+    toggleIntake(True, REVERSE) 
+    wait(1.5, SECONDS)
+    toggleIntake(False, REVERSE)
+    autoDriveForward(-0.70, False)
+
+    # Release ball
+    rotateBy(int(ROTATE90))
+    toggleIntake(True,FORWARD)
+    wait(1, SECONDS)
+    toggleIntake(False,FORWARD)
+    rotateBy(int(-ROTATE90))
+    
+    for count in range(3):
+        # Lower catapult
+        while(not switch.pressing()):
+            catapult_motor.spin(FORWARD)
+        catapult_motor.stop()
+
+        # Grab Triball
+        autoDriveForward(0.80, False)
+        toggleIntake(True, REVERSE) 
+        wait(0.75, SECONDS)
+
+        # Rotate towards goal
+        rotateBy(int(ROTATE90 / 2))
+        # Fire Triball
+        while(switch.pressing()):
+            catapult_motor.spin(FORWARD)
+        catapult_motor.stop()
+        rotateBy(int(ROTATE90 / -2))
+
+        # Back up and Launch
+        autoDriveForward(-0.80, False)
+        toggleIntake(False, REVERSE)
+        
+        
+        
+
+
+    # Lower catapult
+    while(not switch.pressing()):
+        catapult_motor.spin(FORWARD)
+    catapult_motor.stop()
+    
     return
 
 def autonomous():
@@ -469,8 +553,10 @@ def autonomous():
     SKILLS = False
     if(SKILLS  == True):
         skills_auto()
+    else:
+        driver_auto()
         
-    
+    return
     
     #      0   1   2   3   4   5
     #  0 ['X','O','O','O','O','X']
@@ -531,7 +617,7 @@ def autonomous():
     wait(1, SECONDS)
     toggleIntake(False, FORWARD)
 
-    """ Currently Broken (2/25)
+    
     # Lower catapult
     while(not switch.pressing()):
         catapult_motor.spin(FORWARD)
@@ -542,59 +628,59 @@ def autonomous():
     while(switch.pressing()):
         catapult_motor.spin(FORWARD)
     catapult_motor.stop()
-    """
+
+    
 
     # Grab corner triball from start
-    autoDriveForward(0.3)
+    autoDriveForward(0.3, False)
     rotateBy(int(ROTATE90 / -2))
     wait(250, MSEC)
-    autoDriveForward(0.6)
+    autoDriveForward(0.6, False)
     wait(250, MSEC)
     rotateBy(int(-1.1* ROTATE90)) 
     wait(250, MSEC)
     toggleIntake(True, REVERSE) 
-    autoDriveForward(0.55)
+    autoDriveForward(0.55, False)
     wait(1, SECONDS)
-    autoDriveForward(-1.5)
+    autoDriveForward(-1.5, False)
     wait(1, SECONDS)
     toggleIntake(False, REVERSE)
 
     # Go to goal
     rotateBy(int(ROTATE90 / 2) + int(ROTATE90 * 1.1)) 
     wait(250, MSEC)
-    autoDriveForward(0.7)
+    autoDriveForward(0.7, False)
     wait(250, MSEC)
     rotateBy(int(-ROTATE90 * 1.1))
     toggleIntake(True, FORWARD)
 
     # Push into goal
-    autoDriveForward(0.8)
+    autoDriveForward(0.8, False)
     wait(0.5, SECONDS)
-    autoDriveForward(-0.5)
+    autoDriveForward(-0.5, False)
     toggleIntake(False, FORWARD)
 
     # Turn around and shove into goal
     rotateBy(ROTATE90 * 2)
     wait(250, MSEC)
-    autoDriveForward(-0.6)
+    autoDriveForward(-0.6, False)
     wait(500, MSEC)
-    autoDriveForward(0.3)
+    autoDriveForward(0.3, False)
 
     
     # Touch Elevation Bar
-    autoDriveForward(1.3)
-    autoDriveForward(-0.3)
+    autoDriveForward(1.3, False)
+    autoDriveForward(-0.3, False)
     rotateBy(ROTATE90)
-    autoDriveForward(1.2)
+    autoDriveForward(1.2, False)
     rotateBy(int(-ROTATE90/2))
-    autoDriveForward(0.5)
+    autoDriveForward(0.5, False)
     
-    """ Broken (2/25)
     # Lower catapult
     while(not switch.pressing()):
         catapult_motor.spin(FORWARD)
     catapult_motor.stop()
-    """
+    
 
     return
 
@@ -712,7 +798,7 @@ def dual_stick_drive():
 
     # Motor speed percentage based on axis
     ySpeed = leftAxis_UpDwn 
-    xSpeed = rightAxis_LR
+    xSpeed = rightAxis_LR * TURN_SPEED_RATIO
 
     if(abs(ySpeed) > 5 or abs(xSpeed) > 5):
         left_motor_group.spin(FORWARD)
@@ -737,7 +823,11 @@ def experimental_drive():
 
     # Motor speed percentage based on cubed function
     ySpeed = leftAxis_UpDwn ** 3
-    xSpeed = rightAxis_LR ** 3
+    xSpeed = (rightAxis_LR * TURN_SPEED_RATIO) ** 3
+
+    if(controller.buttonL2.pressing()):
+        xSpeed = (rightAxis_LR * SHIFT_TURN_SPEED_RATIO) ** 3
+
 
     if(abs(ySpeed) > 0.05 or abs(xSpeed) > 0.05):
         left_motor_group.spin(FORWARD)
