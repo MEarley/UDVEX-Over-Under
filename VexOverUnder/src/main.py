@@ -339,8 +339,48 @@ def rotateBy(t: int):
 
     return
 
-def skidsteer_auto(tiles, direction: TurnType):
-    
+def skidsteer_auto(tiles, direction: bool):
+    t = int(TILEREVOLUTIONS * tiles) # Target position
+    avg_pos = 0
+    left_motor_group.set_position(value=0.0,units=DEGREES)   # Reset motor position
+    right_motor_group.set_position(value=0.0,units=DEGREES)
+    start_time = brain.timer.time(SECONDS)
+
+    while(not(avg_pos < t + 1 and avg_pos > t - 1)):
+        left_pos = left_motor_group.position() * 0.7
+        right_pos = right_motor_group.position() * 1.22
+        avg_pos = (((left_pos / 0.7)  + (right_pos / 1.22) ) / 2)    # Average motor position
+        drive = PIDControl(t,avg_pos)   #drive based on error between postion and target position
+        
+        # Dont allow drive to go below minimum voltage/speed
+        if(drive < AUTOMINVOLTAGE and drive > 0):
+            drive = AUTOMINVOLTAGE
+        elif(drive > (-1 * AUTOMINVOLTAGE) and drive < 0):
+            drive = -1 * AUTOMINVOLTAGE
+
+        # Don't allow drive to go above maximum voltage/speed
+        if(drive > AUTOMAXVOLTAGE):
+            drive = AUTOMAXVOLTAGE
+        elif(drive < (-1 * AUTOMAXVOLTAGE)):
+            drive = -1 * AUTOMAXVOLTAGE
+
+        # P-control between left and right motors
+        left_drive = drive
+        right_drive = drive
+        if((left_pos / 0.7)  > (right_pos / 1.22) ):
+            left_drive += (right_pos - left_pos ) * LR_KP
+        else:
+            right_drive += (left_pos - right_pos ) * LR_KP
+
+        left_spin_volt(FORWARD,left_drive)
+        right_spin_volt(FORWARD,right_drive)
+
+        elapsed_time = brain.timer.time(SECONDS) - start_time # Autom time out
+        if(elapsed_time > 3):
+            break # Fail safe (shutdown if robot gets stuck and can't move)
+
+    left_motor_group.stop(BRAKE)
+    right_motor_group.stop(BRAKE)
     return
 
 # Traverses by x (horizontal) first. then y (vertical) (P-Control)
@@ -576,6 +616,7 @@ def autonomous():
         for h in range(6):
             controller.screen.print(field[w][h])
     
+    #skidsteer_auto(3, True)
     SKILLS = False
     if(SKILLS  == True):
         skills_auto()
