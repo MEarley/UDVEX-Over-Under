@@ -28,6 +28,7 @@ KP = 0.01
 LR_KP = 0.05
 SHIFT_TURN_SPEED_RATIO = 0.50
 TURN_SPEED_RATIO = 0.75
+SLOWED_INTAKE_SPEED = 90
 
 
 class mode():
@@ -273,7 +274,7 @@ def autoDriveForward(tiles, launchCatapult: bool):
     #field[start[0]][start[1]] = 'S'
     return
 
-# Rotates robot using P-Control
+# Rotates robot using P-Control (<0 = counter-clockwise, >0 = clockwise)
 def rotateBy(t: int):
 
     isNegative = bool(t < 0) 
@@ -336,6 +337,10 @@ def rotateBy(t: int):
     right_motor_group.stop(BRAKE)
 
 
+    return
+
+def skidsteer_auto(tiles, direction: TurnType):
+    
     return
 
 # Traverses by x (horizontal) first. then y (vertical) (P-Control)
@@ -406,9 +411,9 @@ def automControllerDisplay():
             controller.screen.print(field[w][h])
     return
 
-def toggleIntake(toggle: bool,direct):
+def toggleIntake(toggle: bool,direct,percent):
     if(toggle == True):
-        intake_motor.spin(direct)
+        intake_motor.spin(direct,percent,PERCENT)
     else:
         intake_motor.stop()
 
@@ -421,9 +426,9 @@ def pre_autonomous():
 
 def skills_auto():
     # Release intake
-    toggleIntake(True, FORWARD)
+    toggleIntake(True, FORWARD,100)
     wait(1, SECONDS)
-    toggleIntake(False, FORWARD)
+    toggleIntake(False, FORWARD, 100)
 
     # Lower catapult
     while(not switch.pressing()):
@@ -435,12 +440,12 @@ def skills_auto():
     rotateBy(int(ROTATE90 / -2)) 
     autoDriveForward(0.6, False)
     rotateBy(int(-1.1* ROTATE90)) 
-    toggleIntake(True, REVERSE) 
+    toggleIntake(True, REVERSE,SLOWED_INTAKE_SPEED) 
     autoDriveForward(0.55, False)
     wait(0.25, SECONDS)
     autoDriveForward(-0.45, False)
     wait(0.25, SECONDS)
-    toggleIntake(False, REVERSE)
+    toggleIntake(False, REVERSE,SLOWED_INTAKE_SPEED)
 
     # Fire catapult
     while(switch.pressing()):
@@ -454,14 +459,14 @@ def skills_auto():
         catapult_motor.stop()
 
         # Grab Triball from position
-        toggleIntake(True, REVERSE)
+        toggleIntake(True, REVERSE,SLOWED_INTAKE_SPEED)
         autoDriveForward(0.50, False)
         wait(0.5, SECONDS)
         
         # Pull out Triball
         autoDriveForward(-0.50, False)
         wait(0.75, SECONDS)
-        toggleIntake(False, REVERSE)
+        toggleIntake(False, REVERSE,SLOWED_INTAKE_SPEED)
 
         # Fire catapult
         while(switch.pressing()):
@@ -473,9 +478,9 @@ def skills_auto():
 def driver_auto():
 
     # Release intake
-    toggleIntake(True, FORWARD)
-    wait(1, SECONDS)
-    toggleIntake(False, FORWARD)
+    toggleIntake(True, FORWARD,100)
+    wait(3, SECONDS)
+    toggleIntake(False, FORWARD,100)
     
 
     # Go to corner turn
@@ -484,53 +489,74 @@ def driver_auto():
     wait(250, MSEC)
     autoDriveForward(0.4, False)
     wait(250, MSEC)
-    rotateBy(int(-ROTATE90)) 
-    wait(250, MSEC)
+
+    # Rotate towards corner
+    rotateBy(int(-ROTATE90))
+    autoDriveForward(-0.3, False) # back up to avoid climb pole
+    
+    # Rotate catapult towards the goal
+    rotateBy(int(ROTATE90 / 2)) 
+    wait(500, MSEC)
 
     # Launch Preload
     while(switch.pressing()):
         catapult_motor.spin(FORWARD)
     catapult_motor.stop()
 
+    # Rotate catapult back to original position
+    rotateBy(int(-ROTATE90 / 2))
+
     # Grab Triball
-    autoDriveForward(0.55, False)
-    toggleIntake(True, REVERSE) 
-    wait(1.5, SECONDS)
-    toggleIntake(False, REVERSE)
+    toggleIntake(True, REVERSE,SLOWED_INTAKE_SPEED)
+    autoDriveForward(0.75, False) 
+    wait(0.75, SECONDS)
     autoDriveForward(-0.70, False)
+    toggleIntake(False, REVERSE,SLOWED_INTAKE_SPEED)
 
     # Release ball
     rotateBy(int(ROTATE90))
-    toggleIntake(True,FORWARD)
+    toggleIntake(True,FORWARD,100)
     wait(1, SECONDS)
-    toggleIntake(False,FORWARD)
+    toggleIntake(False,FORWARD,100)
     rotateBy(int(-ROTATE90))
     
-    for count in range(3):
+    for count in range(1):
         # Lower catapult
         while(not switch.pressing()):
             catapult_motor.spin(FORWARD)
         catapult_motor.stop()
 
         # Grab Triball
+        toggleIntake(True, REVERSE, SLOWED_INTAKE_SPEED) 
         autoDriveForward(0.80, False)
-        toggleIntake(True, REVERSE) 
         wait(0.75, SECONDS)
+
+        # Back up
+        autoDriveForward(-0.80, False)
+        toggleIntake(False, REVERSE,SLOWED_INTAKE_SPEED)
 
         # Rotate towards goal
         rotateBy(int(ROTATE90 / 2))
+
         # Fire Triball
         while(switch.pressing()):
             catapult_motor.spin(FORWARD)
         catapult_motor.stop()
+
+        # Rotate towards original position
         rotateBy(int(ROTATE90 / -2))
 
-        # Back up and Launch
-        autoDriveForward(-0.80, False)
-        toggleIntake(False, REVERSE)
-        
-        
-        
+    # Turn around
+    rotateBy(ROTATE90 * 2)
+    autoDriveForward(-0.3, False) # back up to corner
+
+    # Turn back towards triball
+    rotateBy(int(ROTATE90))
+    autoDriveForward(-0.5, False) # back up to triball
+
+    # Turn closer to triball
+    rotateBy(int(ROTATE90 / 2))
+    autoDriveForward(-0.6, False) # push triball into goal 
 
 
     # Lower catapult
@@ -613,9 +639,9 @@ def autonomous():
     return
     """
     # Release intake
-    toggleIntake(True, FORWARD)
+    toggleIntake(True, FORWARD,50)
     wait(1, SECONDS)
-    toggleIntake(False, FORWARD)
+    toggleIntake(False, FORWARD, 75)
 
     
     # Lower catapult
@@ -652,13 +678,13 @@ def autonomous():
     autoDriveForward(0.7, False)
     wait(250, MSEC)
     rotateBy(int(-ROTATE90 * 1.1))
-    toggleIntake(True, FORWARD)
+    toggleIntake(True, FORWARD,50)
 
     # Push into goal
     autoDriveForward(0.8, False)
     wait(0.5, SECONDS)
     autoDriveForward(-0.5, False)
-    toggleIntake(False, FORWARD)
+    toggleIntake(False, FORWARD, 75)
 
     # Turn around and shove into goal
     rotateBy(ROTATE90 * 2)
