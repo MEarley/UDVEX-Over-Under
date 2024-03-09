@@ -532,7 +532,7 @@ def skills_auto():
 
     return
 
-def driver_auto():
+def match_auto():
     auto_start_time = brain.timer.time(SECONDS)
 
     # Release intake
@@ -607,6 +607,7 @@ def driver_auto():
         # Rotate towards original position
         rotateBy(int(ROTATE90 / -2))
 
+    """
     # Red triball
     autoDriveForward(0.3, False) # Drive Towards red Triball
     rotateBy(ROTATE90)
@@ -625,30 +626,30 @@ def driver_auto():
 
     # Rotate into elevation bar
     rotateBy(int(ROTATE90 / 2))
-    
-
-
     """
-    Hang bar is in the way
+
+
+    
+    #Hang bar is in the way
     # Turn around
     rotateBy(ROTATE90 * 2)
     autoDriveForward(-0.3, False) # back up to corner
     rotateBy(ROTATE90)
     wait(125,MSEC)
-    skidsteer_auto(-1,False)
+    skidsteer_auto(-0.80,False)
 
     # Straighten Against wall
-    autoDriveForward(0.1, False)
-    rotateBy(-ROTATE90)
+    autoDriveForward(0.08, False)
+    rotateBy(int(-ROTATE90) )
     autoDriveForward(-0.3, False)
 
     # Drive to Black Bar
     autoDriveForward(2.5, False)
+    autoDriveForward(-0.2,False)
 
     # Rotate and drive to elevation bar
     rotateBy(int(ROTATE90 / 2))
-    autoDriveForward(1,False)
-    """
+    
 
     """
     # Turn around
@@ -689,7 +690,7 @@ def autonomous():
     if(SKILLS  == True):
         skills_auto()
     else:
-        driver_auto()
+        match_auto()
         
     return
     
