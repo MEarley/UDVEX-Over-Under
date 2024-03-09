@@ -537,7 +537,7 @@ def driver_auto():
 
     # Release intake
     toggleIntake(True, FORWARD,100)
-    wait(3, SECONDS)
+    wait(2.5, SECONDS)
     toggleIntake(False, FORWARD,100)
     
 
@@ -607,6 +607,29 @@ def driver_auto():
         # Rotate towards original position
         rotateBy(int(ROTATE90 / -2))
 
+    # Red triball
+    autoDriveForward(0.3, False) # Drive Towards red Triball
+    rotateBy(ROTATE90)
+    wait(125,MSEC)
+    skidsteer_auto(1,True) # Push red triball into goal
+
+    # Straighten Against wall
+    autoDriveForward(-0.3, False)
+    autoDriveForward(0.2, False)
+    rotateBy(ROTATE90)
+    autoDriveForward(-0.3, False)
+
+    # Drive to Black Bar
+    autoDriveForward(2.5, False)
+    autoDriveForward(-0.2,False)
+
+    # Rotate into elevation bar
+    rotateBy(int(ROTATE90 / 2))
+    
+
+
+    """
+    Hang bar is in the way
     # Turn around
     rotateBy(ROTATE90 * 2)
     autoDriveForward(-0.3, False) # back up to corner
@@ -617,7 +640,7 @@ def driver_auto():
     # Straighten Against wall
     autoDriveForward(0.1, False)
     rotateBy(-ROTATE90)
-    autoDriveForward(-0.2, False)
+    autoDriveForward(-0.3, False)
 
     # Drive to Black Bar
     autoDriveForward(2.5, False)
@@ -625,7 +648,8 @@ def driver_auto():
     # Rotate and drive to elevation bar
     rotateBy(int(ROTATE90 / 2))
     autoDriveForward(1,False)
-    
+    """
+
     """
     # Turn around
     rotateBy(ROTATE90 * 2)
