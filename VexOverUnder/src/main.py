@@ -484,51 +484,61 @@ def skills_auto():
 
     # Release intake
     toggleIntake(True, FORWARD,100)
-    wait(1, SECONDS)
-    toggleIntake(False, FORWARD, 100)
+    wait(2.5, SECONDS)
+    toggleIntake(False, FORWARD,100)
+    
 
-    # Lower catapult
-    while(not switch.pressing()):
-        catapult_motor.spin(FORWARD)
-    catapult_motor.stop()
-
-    # Grab corner triball from start
+    # Go to corner turn
     autoDriveForward(0.3, False)
-    rotateBy(int(ROTATE90 / -2)) 
-    autoDriveForward(0.6, False) # At corner turn
-    rotateBy(int(-1.1* ROTATE90)) 
-    toggleIntake(True, REVERSE,SLOWED_INTAKE_SPEED) 
-    autoDriveForward(0.55, False)
-    wait(0.25, SECONDS)
-    autoDriveForward(-0.45, False)
-    wait(0.25, SECONDS)
-    toggleIntake(False, REVERSE,SLOWED_INTAKE_SPEED)
+    rotateBy(int(ROTATE90 / -2))
+    wait(120, MSEC)
+    autoDriveForward(0.4, False)
+    wait(120, MSEC)
 
-    # Fire catapult
+    # Rotate towards corner
+    rotateBy(int(-ROTATE90))
+    autoDriveForward(-0.3, False) # back up to avoid climb pole
+    
+    # Rotate catapult towards the goal
+    rotateBy(int(ROTATE90 / 2)) 
+    wait(250, MSEC)
+
+    # Launch Preload
     while(switch.pressing()):
         catapult_motor.spin(FORWARD)
     catapult_motor.stop()
 
-    while(brain.timer.time(SECONDS) - auto_start_time  <= 90): # Launch until the final 10 seconds of the match
+    # Rotate catapult back to original position
+    rotateBy(int(-ROTATE90 / 2))
+
+    autoDriveForward(-0.05, False)
+    
+    while(brain.timer.time(SECONDS) - auto_start_time  <= 61): # Launch for the duration of the match
         # Lower catapult
         while(not switch.pressing()):
             catapult_motor.spin(FORWARD)
         catapult_motor.stop()
 
-        # Grab Triball from position
-        toggleIntake(True, REVERSE,SLOWED_INTAKE_SPEED)
-        autoDriveForward(0.50, False)
-        wait(0.5, SECONDS)
-        
-        # Pull out Triball
-        autoDriveForward(-0.50, False)
-        wait(0.75, SECONDS)
+        # Grab Triball
+        toggleIntake(True, REVERSE, SLOWED_INTAKE_SPEED) 
+        autoDriveForward(0.85, False)
+        wait(125,MSEC)
+
+        # Back up
+        autoDriveForward(-0.85, False)
         toggleIntake(False, REVERSE,SLOWED_INTAKE_SPEED)
 
-        # Fire catapult
+        # Rotate towards goal
+        rotateBy(int(ROTATE90 / 2))
+
+        # Fire Triball
         while(switch.pressing()):
             catapult_motor.spin(FORWARD)
         catapult_motor.stop()
+
+        # Rotate towards original position
+        rotateBy(int(ROTATE90 / -2))
+
 
     return
 
@@ -537,7 +547,7 @@ def match_auto():
 
     # Release intake
     toggleIntake(True, FORWARD,100)
-    wait(2.5, SECONDS)
+    wait(1.5, SECONDS)
     toggleIntake(False, FORWARD,100)
     
 
@@ -581,7 +591,7 @@ def match_auto():
     rotateBy(int(-ROTATE90))
     autoDriveForward(-0.05, False)
     
-    while(brain.timer.time(SECONDS) - auto_start_time  <= 35): # Launch until the final 10 seconds of the match
+    while(brain.timer.time(SECONDS) - auto_start_time  <= 30): # Launch until the final 15 seconds of the match
         # Lower catapult
         while(not switch.pressing()):
             catapult_motor.spin(FORWARD)
